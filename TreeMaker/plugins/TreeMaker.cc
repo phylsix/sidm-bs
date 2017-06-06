@@ -19,6 +19,7 @@
 
 // system include files
 #include <memory>
+#include <algorithm>
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -34,6 +35,9 @@
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/Common/interface/Ptr.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "DataFormats/Math/interface/LorentzVector.h"
+#include <DataFormats/Math/interface/deltaR.h>
+#include "DataFormats/PatCandidates/interface/Electron.h"
 
 #include "TTree.h"
 
@@ -44,6 +48,11 @@ namespace sidm {
         float _eta;
         float _phi;
         float _energy;
+    };
+    struct Z{
+        int _eventId;
+        float _mass;
+        float _pt;
     };
 }
 //
@@ -73,8 +82,33 @@ class TreeMaker : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       // ----------member data ---------------------------
       edm::Service<TFileService> fs_;
       edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticleToken_;
-      TTree* electronTree_;
-      sidm::Electron electron_;
+      edm::EDGetTokenT<edm::View<pat::Electron> > patElectronToken_;
+
+      TTree* genElectronTree_;
+      sidm::Electron genElectron_;
+
+      // TTree* ZTree_;
+      // sidm::Z Z_;
+
+      TTree* genZeeTree_;
+      sidm::Z genZ1_;
+      sidm::Z genZ2_;
+      sidm::Electron genElectron1_;
+      sidm::Electron genElectron2_;
+      sidm::Electron genElectron3_;
+      sidm::Electron genElectron4_;
+
+      TTree* patElectronTree_;
+      sidm::Electron patElectron_;
+
+      TTree* patZeeTree_;
+      sidm::Z patZ1_;
+      sidm::Z patZ2_;
+      sidm::Electron patElectron1_;
+      sidm::Electron patElectron2_;
+      sidm::Electron patElectron3_;
+      sidm::Electron patElectron4_;
+
       Int_t eventNum_;
 };
 
@@ -90,7 +124,8 @@ class TreeMaker : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 // constructors and destructor
 //
 TreeMaker::TreeMaker(const edm::ParameterSet& iConfig):
-        genParticleToken_(consumes<edm::View<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("GenParticleTag",edm::InputTag( "prunedGenParticles"))))
+        genParticleToken_(consumes<edm::View<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("GenParticleTag",edm::InputTag("prunedGenParticles")))),
+        patElectronToken_(consumes<edm::View<pat::Electron> >(iConfig.getUntrackedParameter<edm::InputTag>("PatElectronTag",edm::InputTag("slimmedElectrons"))))
 {
    //now do what ever initialization is needed
    usesResource("TFileService");
@@ -119,20 +154,190 @@ TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
    Handle<View<reco::GenParticle> > genParticleHdl_;
    iEvent.getByToken(genParticleToken_, genParticleHdl_);
-   const std::vector<edm::Ptr<reco::GenParticle> > genParticlePtrVec_ = genParticleHdl_->ptrs();
+   Handle<View<pat::Electron> > patElectronHdl_;
+   iEvent.getByToken(patElectronToken_, patElectronHdl_);
 
+   const std::vector<edm::Ptr<reco::GenParticle> > genParticlePtrVec_ = genParticleHdl_->ptrs();
+   std::vector<edm::Ptr<pat::Electron> > patElectronPtrVec_ = patElectronHdl_->ptrs();
+
+   std::vector<edm::Ptr<reco::GenParticle> > genElectronPtrVec_{};
+   //std::vector<const reco::Candidate*> electronFromGenZPtrVec_{};
+
+   //* Loop through reco::GenParticles ---------------------- */
    for (std::vector<edm::Ptr<reco::GenParticle> >::const_iterator genParticlePtrIter = genParticlePtrVec_.begin();
         genParticlePtrIter != genParticlePtrVec_.end();
         ++genParticlePtrIter)
    {
-       if (abs((*genParticlePtrIter)->pdgId()) != 11) {continue;}
-       electron_._eventId = eventNum_;
-       electron_._pt = (*genParticlePtrIter)->pt();
-       electron_._eta = (*genParticlePtrIter)->eta();
-       electron_._phi = (*genParticlePtrIter)->phi();
-       electron_._energy = (*genParticlePtrIter)->energy();
-       
-       electronTree_->Fill();
+       if (abs((*genParticlePtrIter)->pdgId()) != 11 &&
+               (*genParticlePtrIter)->pdgId()  != 23) {continue;}
+
+       //* Gen Electron ------------------------------ */
+       if (abs((*genParticlePtrIter)->pdgId()) == 11)
+       {
+           if ((*genParticlePtrIter)->mother()->pdgId() != 23) {continue;}
+           if (abs((*genParticlePtrIter)->eta()) > 2.5) {continue;}
+           if ((*genParticlePtrIter)->pt() < 7) {continue;}
+           genElectron_._eventId = eventNum_;
+           genElectron_._pt = (*genParticlePtrIter)->pt();
+           genElectron_._eta = (*genParticlePtrIter)->eta();
+           genElectron_._phi = (*genParticlePtrIter)->phi();
+           genElectron_._energy = (*genParticlePtrIter)->energy();
+
+           genElectronTree_->Fill();
+           genElectronPtrVec_.push_back(*genParticlePtrIter);
+           // std::cout<<"Event# "<<std::setw(5)<<eventNum_<<"    ElectronMother-> "<<(*genParticlePtrIter)->mother()->pdgId()<<std::endl;
+       }
+
+       /* Gen Z ----------------------------------
+       if ((*genParticlePtrIter)->pdgId() == 23)
+       {
+           if ((*genParticlePtrIter)->numberOfDaughters() != 2) {continue;}
+           const reco::Candidate* d1 = (*genParticlePtrIter)->daughter(0);
+           const reco::Candidate* d2 = (*genParticlePtrIter)->daughter(1);
+           if ( (abs(d1->pdgId()) != 11) &&
+                (abs(d2->pdgId()) != 11) &&
+                (d1->charge() * d2->charge() != -1) ) {continue;}
+           Z_._eventId = eventNum_;
+           Z_._mass = (*genParticlePtrIter)->mass();
+
+           ZTree_->Fill();
+           electronFromGenZPtrVec_.push_back(d1);
+           electronFromGenZPtrVec_.push_back(d2);
+
+           //std::cout<<"Event# "<<std::setw(5)<<eventNum_<<"    Z Mass-->"<<(*genParticlePtrIter)->mass()<<std::endl;
+       }
+       -----------------------------------------*/
+   }
+
+   //* More than 4 Gen Electron ------------------------------ */
+   if (genElectronPtrVec_.size() >= 4)
+   {
+       std::sort(genElectronPtrVec_.begin(), genElectronPtrVec_.end(),
+                    [](edm::Ptr<reco::GenParticle>& lhs, edm::Ptr<reco::GenParticle>& rhs)
+                    {return lhs->energy() > rhs->energy();} );
+
+       std::vector<std::pair<edm::Ptr<reco::GenParticle>, edm::Ptr<reco::GenParticle> > > ePairInZMassVec_{};
+       for (std::vector<edm::Ptr<reco::GenParticle> >::iterator genElectronPtrIter = genElectronPtrVec_.begin();
+            genElectronPtrIter != genElectronPtrVec_.end();
+            ++genElectronPtrIter)
+       {
+           if ((*genElectronPtrIter)->pt() < 10) {continue;} // both pt need to be greater than 10GeV
+           math::XYZTLorentzVector iP4_= (*genElectronPtrIter)->p4();
+           for (std::vector<edm::Ptr<reco::GenParticle> >::iterator jIter = genElectronPtrIter+1;
+                jIter != genElectronPtrVec_.end();
+                ++jIter)
+           {
+               math::XYZTLorentzVector jP4_ = (*jIter)->p4();
+               if ((iP4_+jP4_).M()<81 || (iP4_+jP4_).M()>101) {continue;} // invM need to be within Z +/-10GeV window
+               if (std::max((*genElectronPtrIter)->pt(), (*jIter)->pt()) < 20) {continue;} // leading pt need to be greater than 20GeV
+               ePairInZMassVec_.push_back(std::make_pair(*genElectronPtrIter, *jIter));
+           }
+       }
+
+       //* More than 2 Z reconstructed from Gen Electrons --------------- */
+       if(ePairInZMassVec_.size() >= 2)
+       {
+           std::sort(ePairInZMassVec_.begin(), ePairInZMassVec_.end(),
+                        [](std::pair<edm::Ptr<reco::GenParticle>, edm::Ptr<reco::GenParticle> >& lhs,
+                           std::pair<edm::Ptr<reco::GenParticle>, edm::Ptr<reco::GenParticle> >& rhs)
+                        {
+                            float dR_l = deltaR(lhs.first->eta(), lhs.first->phi(), lhs.second->eta(), lhs.second->phi());
+                            float dR_r = deltaR(rhs.first->eta(), rhs.first->phi(), rhs.second->eta(), rhs.second->phi());
+                            return dR_l < dR_r;
+                        });
+           genZ1_._eventId = eventNum_;
+           genZ1_._mass = (ePairInZMassVec_[0].first->p4() + ePairInZMassVec_[0].second->p4()).M();
+           genZ1_._pt   = (ePairInZMassVec_[0].first->p4() + ePairInZMassVec_[0].second->p4()).Pt();
+
+           genZ2_._eventId = eventNum_;
+           genZ2_._mass = (ePairInZMassVec_[1].first->p4() + ePairInZMassVec_[1].second->p4()).M();
+           genZ2_._pt   = (ePairInZMassVec_[1].first->p4() + ePairInZMassVec_[1].second->p4()).Pt();
+
+           genElectron1_._pt = std::max(ePairInZMassVec_[0].first->pt(), ePairInZMassVec_[0].second->pt());
+           genElectron2_._pt = std::min(ePairInZMassVec_[0].first->pt(), ePairInZMassVec_[0].second->pt());
+           genElectron3_._pt = std::max(ePairInZMassVec_[1].first->pt(), ePairInZMassVec_[1].second->pt());
+           genElectron4_._pt = std::min(ePairInZMassVec_[1].first->pt(), ePairInZMassVec_[1].second->pt());
+
+           genZeeTree_->Fill();
+
+           /*
+           std::vector<std::pair<edm::Ptr<reco::GenParticle>, edm::Ptr<reco::GenParticle> > >::iterator electronPairIter;
+           for (electronPairIter = ePairInZMassVec_.begin();
+                electronPairIter != ePairInZMassVec_.end();
+                ++electronPairIter)
+           {
+               float invM_ = (electronPairIter->first->p4() + electronPairIter->second->p4()).M();
+               std::cout<<invM_<<" ";
+           }
+           std::cout<<std::endl;*/
+       }
+   }
+
+   //* Got be larger than 4 ------------------------------*/
+   if (patElectronPtrVec_.size() >= 4)
+   {
+       std::sort(patElectronPtrVec_.begin(), patElectronPtrVec_.end(),
+                    [](edm::Ptr<pat::Electron>& lhs, edm::Ptr<pat::Electron>& rhs)
+                    {return lhs->energy() > rhs->energy();} );
+       patElectronPtrVec_.erase(
+               std::remove_if(patElectronPtrVec_.begin(), patElectronPtrVec_.end(),
+                                [](const edm::Ptr<pat::Electron>& e)
+                                {return (e->pt() < 7) || (abs(e->eta()) > 2.5);}),
+               patElectronPtrVec_.end()); // pt need to be larger than 7 GeV; and in barrel
+
+       //* Loop through pat::Electrons --------------------- */
+       std::vector<std::pair<edm::Ptr<pat::Electron>, edm::Ptr<pat::Electron> > > patEPairInZMassVec_{};
+       for (std::vector<edm::Ptr<pat::Electron> >::const_iterator patElectronPtrIter = patElectronPtrVec_.begin();
+            patElectronPtrIter != patElectronPtrVec_.end();
+            ++patElectronPtrIter)
+       {
+           patElectron_._eventId = eventNum_;
+           patElectron_._pt = (*patElectronPtrIter)->pt();
+           patElectron_._eta = (*patElectronPtrIter)->eta();
+           patElectron_._energy = (*patElectronPtrIter)->energy();
+           patElectron_._phi = (*patElectronPtrIter)->phi();
+
+           patElectronTree_->Fill();
+           //* --------------------------------------------- */
+           if ((*patElectronPtrIter)->pt() < 10) {continue;} // both pt need to be greater than 10GeV
+           math::XYZTLorentzVector iP4_{(*patElectronPtrIter)->p4()};
+           for (std::vector<edm::Ptr<pat::Electron> >::const_iterator jIter = patElectronPtrIter+1;
+                jIter != patElectronPtrVec_.end();
+                ++jIter)
+           {
+               math::XYZTLorentzVector jP4_{(*jIter)->p4()};
+               if ((iP4_+jP4_).M()<81 || (iP4_+jP4_).M()>101) {continue;} // same as above
+               if (std::max((*patElectronPtrIter)->pt(), (*jIter)->pt()) < 20) {continue;}
+               patEPairInZMassVec_.push_back(std::make_pair(*patElectronPtrIter, *jIter));
+           }
+       }
+
+       //* More than 2 Z reconstructed from pat::Electrons ---------------*/
+       if (patEPairInZMassVec_.size() >= 2)
+       {
+           std::sort(patEPairInZMassVec_.begin(), patEPairInZMassVec_.end(),
+                        [](std::pair<edm::Ptr<pat::Electron>, edm::Ptr<pat::Electron> >& lhs,
+                           std::pair<edm::Ptr<pat::Electron>, edm::Ptr<pat::Electron> >& rhs)
+                        {
+                            float dR_l = deltaR(lhs.first->eta(), lhs.first->phi(), lhs.second->eta(), lhs.second->phi());
+                            float dR_r = deltaR(rhs.first->eta(), rhs.first->phi(), rhs.second->eta(), rhs.second->phi());
+                            return dR_l < dR_r;
+                        });
+           patZ1_._eventId = eventNum_;
+           patZ1_._mass = (patEPairInZMassVec_[0].first->p4() + patEPairInZMassVec_[0].second->p4()).M();
+           patZ1_._pt   = (patEPairInZMassVec_[0].first->p4() + patEPairInZMassVec_[0].second->p4()).Pt();
+
+           patZ2_._eventId = eventNum_;
+           patZ2_._mass = (patEPairInZMassVec_[1].first->p4() + patEPairInZMassVec_[1].second->p4()).M();
+           patZ2_._pt   = (patEPairInZMassVec_[1].first->p4() + patEPairInZMassVec_[1].second->p4()).Pt();
+
+           patElectron1_._pt = std::max(patEPairInZMassVec_[0].first->pt(), patEPairInZMassVec_[0].second->pt());
+           patElectron2_._pt = std::min(patEPairInZMassVec_[0].first->pt(), patEPairInZMassVec_[0].second->pt());
+           patElectron3_._pt = std::max(patEPairInZMassVec_[1].first->pt(), patEPairInZMassVec_[1].second->pt());
+           patElectron4_._pt = std::min(patEPairInZMassVec_[1].first->pt(), patEPairInZMassVec_[1].second->pt());
+
+           patZeeTree_->Fill();
+       }
    }
    eventNum_++;
 /* ---------------------
@@ -153,12 +358,45 @@ TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 void 
 TreeMaker::beginJob()
 {
-    electronTree_ = fs_->make<TTree>("ElectronTree", "basic electrons");
-    electronTree_->Branch("eventId", &electron_._eventId, "eventId/I");
-    electronTree_->Branch("pt", &electron_._pt, "pt/F");
-    electronTree_->Branch("eta", &electron_._eta, "eta/F");
-    electronTree_->Branch("phi", &electron_._phi, "phi/F");
-    electronTree_->Branch("energy", &electron_._energy, "energy/F");
+    genElectronTree_ = fs_->make<TTree>("genElectronTree", "Gen electrons");
+    genElectronTree_->Branch("eventId", &genElectron_._eventId, "eventId/I");
+    genElectronTree_->Branch("pt", &genElectron_._pt, "pt/F");
+    genElectronTree_->Branch("eta", &genElectron_._eta, "eta/F");
+    genElectronTree_->Branch("phi", &genElectron_._phi, "phi/F");
+    genElectronTree_->Branch("energy", &genElectron_._energy, "energy/F");
+
+    // ZTree_ = fs_->make<TTree>("ZTree", "Gen Z bosons");
+    // ZTree_->Branch("eventId", &Z_._eventId, "eventId/I");
+    // ZTree_->Branch("mass", &Z_._mass, "mass/F");
+
+    genZeeTree_ = fs_->make<TTree>("genZeeTree", "Gen info on Zee");
+    genZeeTree_->Branch("eventId", &genZ1_._eventId , "eventId/I");
+    genZeeTree_->Branch("Z1_Pt", &genZ1_._pt , "Z1_Pt/F");
+    genZeeTree_->Branch("Z2_Pt", &genZ2_._pt , "Z2_Pt/F");
+    genZeeTree_->Branch("m1ee", &genZ1_._mass , "m1ee/F");
+    genZeeTree_->Branch("m2ee", &genZ2_._mass , "m2ee/F");
+    genZeeTree_->Branch("e1_Pt", &genElectron1_._pt , "e1_Pt/F");
+    genZeeTree_->Branch("e2_Pt", &genElectron2_._pt , "e2_Pt/F");
+    genZeeTree_->Branch("e3_Pt", &genElectron3_._pt , "e3_Pt/F");
+    genZeeTree_->Branch("e4_Pt", &genElectron4_._pt , "e4_Pt/F");
+
+    patElectronTree_ = fs_->make<TTree>("patElectronTree", "pat::Electron info");
+    patElectronTree_->Branch("eventId", &patElectron_._eventId, "eventId/I");
+    patElectronTree_->Branch("pt", &patElectron_._pt, "pt/F");
+    patElectronTree_->Branch("eta", &patElectron_._eta, "eta/F");
+    patElectronTree_->Branch("phi", &patElectron_._phi, "phi/F");
+    patElectronTree_->Branch("energy", &patElectron_._energy, "energy/F");
+
+    patZeeTree_ = fs_->make<TTree>("patZeeTree", "pat::Electron info on Zee");
+    patZeeTree_->Branch("eventId", &patZ1_._eventId , "eventId/I");
+    patZeeTree_->Branch("Z1_Pt", &patZ1_._pt , "Z1_Pt/F");
+    patZeeTree_->Branch("Z2_Pt", &patZ2_._pt , "Z2_Pt/F");
+    patZeeTree_->Branch("m1ee", &patZ1_._mass , "m1ee/F");
+    patZeeTree_->Branch("m2ee", &patZ2_._mass , "m2ee/F");
+    patZeeTree_->Branch("e1_Pt", &patElectron1_._pt , "e1_Pt/F");
+    patZeeTree_->Branch("e2_Pt", &patElectron2_._pt , "e2_Pt/F");
+    patZeeTree_->Branch("e3_Pt", &patElectron3_._pt , "e3_Pt/F");
+    patZeeTree_->Branch("e4_Pt", &patElectron4_._pt , "e4_Pt/F");
 }
 
 // ------------ method called once each job just after ending the event loop  ------------

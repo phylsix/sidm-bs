@@ -6,4 +6,6 @@
 <use name="CommonTools/UtilAlgos"/>
 <use name="DataFormats/Common"/>
 <use name="DataFormats/HepMCCandidate"/>
+<use name="DataFormats/Math"/>
+<use name="DataFormats/PatCandidates"/>
 <flags EDM_PLUGIN="1"/>
