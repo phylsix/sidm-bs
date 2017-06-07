@@ -5,7 +5,7 @@ process = cms.Process("treeMaker")
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.threshold = 'ERROR'
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100000) )
 
 inputFiles = cms.untracked.vstring()
 process.source = cms.Source("PoolSource",
