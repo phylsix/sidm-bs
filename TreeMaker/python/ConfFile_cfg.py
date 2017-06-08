@@ -44,6 +44,6 @@ process.treeMaker = cms.EDAnalyzer('TreeMaker',
 )
 
 process.TFileService = cms.Service("TFileService",
-                                   fileName = cms.string("output.root"))
+                                   fileName = cms.string("../data/output.root"))
 
 process.p = cms.Path(process.treeMaker)

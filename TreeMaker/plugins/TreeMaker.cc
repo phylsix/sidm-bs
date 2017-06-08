@@ -36,7 +36,7 @@
 #include "DataFormats/Common/interface/Ptr.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
-#include <DataFormats/Math/interface/deltaR.h>
+#include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
 
 #include "TTree.h"
@@ -228,6 +228,7 @@ TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
                 ++jIter)
            {
                math::XYZTLorentzVector jP4_ = (*jIter)->p4();
+               if ((*genElectronPtrIter)->charge() * (*jIter)->charge() != -1) {continue;} // need to have opposite charge
                if ((iP4_+jP4_).M()<81 || (iP4_+jP4_).M()>101) {continue;} // invM need to be within Z +/-10GeV window
                if (std::max((*genElectronPtrIter)->pt(), (*jIter)->pt()) < 20) {continue;} // leading pt need to be greater than 20GeV
                ePairInZMassVec_.push_back(std::make_pair(*genElectronPtrIter, *jIter));
@@ -306,6 +307,7 @@ TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
                 ++jIter)
            {
                math::XYZTLorentzVector jP4_{(*jIter)->p4()};
+               if ((*patElectronPtrIter)->charge() * (*jIter)->charge() != -1) {continue;} // need to have opposite charge
                if ((iP4_+jP4_).M()<81 || (iP4_+jP4_).M()>101) {continue;} // same as above
                if (std::max((*patElectronPtrIter)->pt(), (*jIter)->pt()) < 20) {continue;}
                patEPairInZMassVec_.push_back(std::make_pair(*patElectronPtrIter, *jIter));
