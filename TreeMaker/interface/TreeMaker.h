@@ -2,6 +2,7 @@
 #define SIDMBS_TREEMAKER_TREEMAKER_H
 
 #include <memory>
+#include <vector>
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
@@ -13,6 +14,7 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
+#include "DataFormats/Common/interface/Ptr.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
 
@@ -80,6 +82,7 @@ namespace sidm {
           sidm::Electron patElectron3_;
           sidm::Electron patElectron4_;
     
+          std::vector<edm::Ptr<reco::GenParticle> > genElectronPtrVec_;
           Int_t eventNum_;
     };
 

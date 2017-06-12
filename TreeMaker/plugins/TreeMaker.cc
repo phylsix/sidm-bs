@@ -21,7 +21,6 @@
 
 // user include files
 #include "DataFormats/Common/interface/Handle.h"
-#include "DataFormats/Common/interface/Ptr.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include "DataFormats/Math/interface/deltaR.h"
 
@@ -57,6 +56,7 @@ sidm::TreeMaker::~TreeMaker()
    // do anything here that needs to be done at desctruction time
    // (e.g. close files, deallocate resources etc.)
     eventNum_ = 0;
+    genElectronPtrVec_.clear();
 }
 
 
@@ -77,9 +77,8 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
     const std::vector<edm::Ptr<reco::GenParticle> > genParticlePtrVec_ = genParticleHdl_->ptrs();
 
-    std::vector<edm::Ptr<reco::GenParticle> > genElectronPtrVec_{};
     //std::vector<const reco::Candidate*> electronFromGenZPtrVec_{};
-
+    genElectronPtrVec_.clear();
     //* Loop through reco::GenParticles ---------------------- */
     for (std::vector<edm::Ptr<reco::GenParticle> >::const_iterator genParticlePtrIter = genParticlePtrVec_.begin();
          genParticlePtrIter != genParticlePtrVec_.end();
@@ -89,21 +88,19 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
                 (*genParticlePtrIter)->pdgId()  != 23) {continue;}
 
         //* Gen Electron ------------------------------ */
-        if (abs((*genParticlePtrIter)->pdgId()) == 11)
-        {
-            if ((*genParticlePtrIter)->mother()->pdgId() != 23) {continue;}
-            if (abs((*genParticlePtrIter)->eta()) > 2.5) {continue;}
-            if ((*genParticlePtrIter)->pt() < electronPtLow_) {continue;}
-            genElectron_._eventId = eventNum_;
-            genElectron_._pt     = (*genParticlePtrIter)->pt();
-            genElectron_._eta    = (*genParticlePtrIter)->eta();
-            genElectron_._phi    = (*genParticlePtrIter)->phi();
-            genElectron_._energy = (*genParticlePtrIter)->energy();
+        if (abs((*genParticlePtrIter)->pdgId()) != 11) {continue;}
+        if ((*genParticlePtrIter)->mother()->pdgId() != 23) {continue;}
+        if (abs((*genParticlePtrIter)->eta()) > (2.5)) {continue;}
+        if ((*genParticlePtrIter)->pt() < electronPtLow_) {continue;}
+        genElectron_._eventId = eventNum_;
+        genElectron_._pt     = (*genParticlePtrIter)->pt();
+        genElectron_._eta    = (*genParticlePtrIter)->eta();
+        genElectron_._phi    = (*genParticlePtrIter)->phi();
+        genElectron_._energy = (*genParticlePtrIter)->energy();
 
-            genElectronTree_->Fill();
-            genElectronPtrVec_.push_back(*genParticlePtrIter);
+        genElectronTree_->Fill();
+        genElectronPtrVec_.push_back(*genParticlePtrIter);
             // std::cout<<"Event# "<<std::setw(5)<<eventNum_<<"    ElectronMother-> "<<(*genParticlePtrIter)->mother()->pdgId()<<std::endl;
-        }
 
         /* Gen Z ----------------------------------
         if ((*genParticlePtrIter)->pdgId() == 23)
@@ -126,6 +123,11 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
         -----------------------------------------*/
     }
 
+    genElectronPtrVec_.erase(
+        std::remove_if(genElectronPtrVec_.begin(), genElectronPtrVec_.end(),
+          [this](const edm::Ptr<reco::GenParticle>& e)
+          {return (e->pt() < subleadElectronPtLow_); }),
+        genElectronPtrVec_.end());
     //* More than 4 Gen Electron ------------------------------ */
     if (genElectronPtrVec_.size() >= 4)
     {
@@ -138,7 +140,6 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
              genElectronPtrIter != genElectronPtrVec_.end();
              ++genElectronPtrIter)
         {
-            if ((*genElectronPtrIter)->pt() < subleadElectronPtLow_) {continue;} // both pt need to be greater than 10GeV
             math::XYZTLorentzVector iP4_= (*genElectronPtrIter)->p4();
             for (std::vector<edm::Ptr<reco::GenParticle> >::iterator jIter = genElectronPtrIter+1;
                  jIter != genElectronPtrVec_.end();
@@ -178,6 +179,12 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
             genZeeTree_->Fill();
 
+            genElectronPtrVec_.clear();
+            genElectronPtrVec_.push_back(ePairInZMassVec_[0].first);
+            genElectronPtrVec_.push_back(ePairInZMassVec_[0].second);
+            genElectronPtrVec_.push_back(ePairInZMassVec_[1].first);
+            genElectronPtrVec_.push_back(ePairInZMassVec_[1].second);
+
             /*
             std::vector<std::pair<edm::Ptr<reco::GenParticle>, edm::Ptr<reco::GenParticle> > >::iterator electronPairIter;
             for (electronPairIter = ePairInZMassVec_.begin();
@@ -196,19 +203,48 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
   iEvent.getByToken(patElectronToken_, patElectronHdl_);
 
   std::vector<edm::Ptr<pat::Electron> > patElectronPtrVec_ = patElectronHdl_->ptrs();
+  std::sort(patElectronPtrVec_.begin(), patElectronPtrVec_.end(),
+      [](edm::Ptr<pat::Electron>& lhs, edm::Ptr<pat::Electron>& rhs)
+      {return lhs->energy() > rhs->energy();} );
+  patElectronPtrVec_.erase(
+      std::remove_if(patElectronPtrVec_.begin(),
+                     patElectronPtrVec_.end(),
+                     [this](const edm::Ptr<pat::Electron>& e)
+                     {return (e->pt() < electronPtLow_) || (abs(e->eta()) > 2.5);}),
+      patElectronPtrVec_.end()
+  ); // In barrel
+
+  //* GenMatching  ------------------------------*/
+  if (!realData_)
+  {
+    patElectronPtrVec_.erase(
+        std::remove_if(
+          patElectronPtrVec_.begin(),
+          patElectronPtrVec_.end(),
+          [this](const edm::Ptr<pat::Electron>& patE)
+          {
+            bool match = false;
+            std::vector<edm::Ptr<reco::GenParticle> >::const_iterator genIter;
+            for (genIter = genElectronPtrVec_.begin();
+                 genIter!= genElectronPtrVec_.end();
+                 ++genIter)
+            {
+              if (deltaR(patE->eta(), patE->phi(), (*genIter)->eta(), (*genIter)->phi())<0.1)
+              {
+                match = true;
+                break;
+              }
+            }
+            return !match;
+          }
+        ),
+        patElectronPtrVec_.end()
+    );
+  }
 
   //* Got be larger than 4 ------------------------------*/
   if (patElectronPtrVec_.size() >= 4)
   {
-      std::sort(patElectronPtrVec_.begin(), patElectronPtrVec_.end(),
-                   [](edm::Ptr<pat::Electron>& lhs, edm::Ptr<pat::Electron>& rhs)
-                   {return lhs->energy() > rhs->energy();} );
-      patElectronPtrVec_.erase(
-              std::remove_if(patElectronPtrVec_.begin(), patElectronPtrVec_.end(),
-                               [this](const edm::Ptr<pat::Electron>& e)
-                               {return (e->pt() < electronPtLow_) || (abs(e->eta()) > 2.5);}),
-              patElectronPtrVec_.end()); // In barrel
-
       //* Loop through pat::Electrons --------------------- */
       std::vector<std::pair<edm::Ptr<pat::Electron>, edm::Ptr<pat::Electron> > > patEPairInZMassVec_{};
       for (std::vector<edm::Ptr<pat::Electron> >::const_iterator patElectronPtrIter = patElectronPtrVec_.begin();
