@@ -14,103 +14,16 @@
 // Original Author:  Weinan Si
 //         Created:  Fri, 02 Jun 2017 10:38:41 GMT
 //
-//
 
+#include "sidm-bs/TreeMaker/interface/TreeMaker.h"
 
-// system include files
-#include <memory>
 #include <algorithm>
 
 // user include files
-#include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/one/EDAnalyzer.h"
-
-#include "FWCore/Framework/interface/Event.h"
-#include "FWCore/Framework/interface/MakerMacros.h"
-
-#include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/ServiceRegistry/interface/Service.h"
-#include "FWCore/Utilities/interface/InputTag.h"
-#include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/Common/interface/Ptr.h"
-#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include "DataFormats/Math/interface/deltaR.h"
-#include "DataFormats/PatCandidates/interface/Electron.h"
-
-#include "TTree.h"
-
-namespace sidm {
-    struct Electron{
-        int _eventId;
-        float _pt;
-        float _eta;
-        float _phi;
-        float _energy;
-    };
-    struct Z{
-        int _eventId;
-        float _mass;
-        float _pt;
-    };
-}
-//
-// class declaration
-//
-
-// If the analyzer does not use TFileService, please remove
-// the template argument to the base class so the class inherits
-// from  edm::one::EDAnalyzer<> and also remove the line from
-// constructor "usesResource("TFileService");"
-// This will improve performance in multithreaded jobs.
-
-class TreeMaker : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
-// class TreeMaker : public edm::one::EDAnalyzer<>  {
-   public:
-      explicit TreeMaker(const edm::ParameterSet&);
-      ~TreeMaker();
-
-      static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
-
-
-   private:
-      virtual void beginJob() override;
-      virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
-      virtual void endJob() override;
-
-      // ----------member data ---------------------------
-      edm::Service<TFileService> fs_;
-      edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticleToken_;
-      edm::EDGetTokenT<edm::View<pat::Electron> > patElectronToken_;
-
-      TTree* genElectronTree_;
-      sidm::Electron genElectron_;
-
-      // TTree* ZTree_;
-      // sidm::Z Z_;
-
-      TTree* genZeeTree_;
-      sidm::Z genZ1_;
-      sidm::Z genZ2_;
-      sidm::Electron genElectron1_;
-      sidm::Electron genElectron2_;
-      sidm::Electron genElectron3_;
-      sidm::Electron genElectron4_;
-
-      TTree* patElectronTree_;
-      sidm::Electron patElectron_;
-
-      TTree* patZeeTree_;
-      sidm::Z patZ1_;
-      sidm::Z patZ2_;
-      sidm::Electron patElectron1_;
-      sidm::Electron patElectron2_;
-      sidm::Electron patElectron3_;
-      sidm::Electron patElectron4_;
-
-      Int_t eventNum_;
-};
 
 //
 // constants, enums and typedefs
@@ -123,7 +36,7 @@ class TreeMaker : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 //
 // constructors and destructor
 //
-TreeMaker::TreeMaker(const edm::ParameterSet& iConfig):
+sidm::TreeMaker::TreeMaker(const edm::ParameterSet& iConfig):
         genParticleToken_(consumes<edm::View<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("GenParticleTag",edm::InputTag("prunedGenParticles")))),
         patElectronToken_(consumes<edm::View<pat::Electron> >(iConfig.getUntrackedParameter<edm::InputTag>("PatElectronTag",edm::InputTag("slimmedElectrons"))))
 {
@@ -133,7 +46,7 @@ TreeMaker::TreeMaker(const edm::ParameterSet& iConfig):
 }
 
 
-TreeMaker::~TreeMaker()
+sidm::TreeMaker::~TreeMaker()
 {
  
    // do anything here that needs to be done at desctruction time
@@ -148,7 +61,7 @@ TreeMaker::~TreeMaker()
 
 // ------------ method called for each event  ------------
 void
-TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
 
@@ -178,9 +91,9 @@ TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
            if (abs((*genParticlePtrIter)->eta()) > 2.5) {continue;}
            if ((*genParticlePtrIter)->pt() < 7) {continue;}
            genElectron_._eventId = eventNum_;
-           genElectron_._pt = (*genParticlePtrIter)->pt();
-           genElectron_._eta = (*genParticlePtrIter)->eta();
-           genElectron_._phi = (*genParticlePtrIter)->phi();
+           genElectron_._pt     = (*genParticlePtrIter)->pt();
+           genElectron_._eta    = (*genParticlePtrIter)->eta();
+           genElectron_._phi    = (*genParticlePtrIter)->phi();
            genElectron_._energy = (*genParticlePtrIter)->energy();
 
            genElectronTree_->Fill();
@@ -293,10 +206,10 @@ TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             ++patElectronPtrIter)
        {
            patElectron_._eventId = eventNum_;
-           patElectron_._pt = (*patElectronPtrIter)->pt();
-           patElectron_._eta = (*patElectronPtrIter)->eta();
+           patElectron_._pt     = (*patElectronPtrIter)->pt();
+           patElectron_._eta    = (*patElectronPtrIter)->eta();
            patElectron_._energy = (*patElectronPtrIter)->energy();
-           patElectron_._phi = (*patElectronPtrIter)->phi();
+           patElectron_._phi    = (*patElectronPtrIter)->phi();
 
            patElectronTree_->Fill();
            //* --------------------------------------------- */
@@ -342,23 +255,12 @@ TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
        }
    }
    eventNum_++;
-/* ---------------------
-#ifdef THIS_IS_AN_EVENT_EXAMPLE
-   Handle<ExampleData> pIn;
-   iEvent.getByLabel("example",pIn);
-#endif
-   
-#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
-   ESHandle<SetupData> pSetup;
-   iSetup.get<SetupRecord>().get(pSetup);
-#endif
---------------------- */
 }
 
 
 // ------------ method called once each job just before starting event loop  ------------
 void 
-TreeMaker::beginJob()
+sidm::TreeMaker::beginJob()
 {
     genElectronTree_ = fs_->make<TTree>("genElectronTree", "Gen electrons");
     genElectronTree_->Branch("eventId", &genElectron_._eventId, "eventId/I");
@@ -403,13 +305,13 @@ TreeMaker::beginJob()
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
-TreeMaker::endJob() 
+sidm::TreeMaker::endJob() 
 {
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
 void
-TreeMaker::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+sidm::TreeMaker::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   //The following says we do not know what parameters are allowed so do no validation
   // Please change this to state exactly what you do use, even if it is no parameters
   edm::ParameterSetDescription desc;
@@ -418,4 +320,4 @@ TreeMaker::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
 }
 
 //define this as a plug-in
-DEFINE_FWK_MODULE(TreeMaker);
+DEFINE_FWK_MODULE(sidm::TreeMaker);

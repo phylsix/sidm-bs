@@ -5,7 +5,7 @@ process = cms.Process("treeMaker")
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.threshold = 'ERROR'
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 inputFiles = cms.untracked.vstring()
 process.source = cms.Source("PoolSource",
@@ -38,7 +38,7 @@ inputFiles.extend([
         '/store/mc/RunIISummer16MiniAODv2/ZZTo4L_13TeV_powheg_pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/120000/F6AC87EA-04C6-E611-AA06-00259021A076.root',
         '/store/mc/RunIISummer16MiniAODv2/ZZTo4L_13TeV_powheg_pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/120000/FC8A47E2-4FC6-E611-BC7E-002590E7D5AE.root'])
 
-process.treeMaker = cms.EDAnalyzer('TreeMaker',
+process.treeMaker = cms.EDAnalyzer('sidm::TreeMaker',
                                    GenParticleTag = cms.untracked.InputTag("prunedGenParticles"),
                                    PatElectronTag = cms.untracked.InputTag("slimmedElectrons")
 )
