@@ -38,7 +38,16 @@ inputFiles.extend([
         '/store/mc/RunIISummer16MiniAODv2/ZZTo4L_13TeV_powheg_pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/120000/F6AC87EA-04C6-E611-AA06-00259021A076.root',
         '/store/mc/RunIISummer16MiniAODv2/ZZTo4L_13TeV_powheg_pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/120000/FC8A47E2-4FC6-E611-BC7E-002590E7D5AE.root'])
 
+treemakerparams = cms.PSet(
+    ElectronPtLow        = cms.untracked.double(7.),
+    LeadElectronPtLow    = cms.untracked.double(20.),
+    SubleadElectronPtLow = cms.untracked.double(10.),
+    ZMassWindow          = cms.untracked.double(10.),
+    RealData             = cms.untracked.bool(False)
+)
+
 process.treeMaker = cms.EDAnalyzer('sidm::TreeMaker',
+                                   treemakerparams,
                                    GenParticleTag = cms.untracked.InputTag("prunedGenParticles"),
                                    PatElectronTag = cms.untracked.InputTag("slimmedElectrons")
 )

@@ -38,7 +38,12 @@
 //
 sidm::TreeMaker::TreeMaker(const edm::ParameterSet& iConfig):
         genParticleToken_(consumes<edm::View<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("GenParticleTag",edm::InputTag("prunedGenParticles")))),
-        patElectronToken_(consumes<edm::View<pat::Electron> >(iConfig.getUntrackedParameter<edm::InputTag>("PatElectronTag",edm::InputTag("slimmedElectrons"))))
+        patElectronToken_(consumes<edm::View<pat::Electron> >(iConfig.getUntrackedParameter<edm::InputTag>("PatElectronTag",edm::InputTag("slimmedElectrons")))),
+        electronPtLow_(iConfig.getUntrackedParameter<double>("ElectronPtLow")),
+        leadElectronPtLow_(iConfig.getUntrackedParameter<double>("LeadElectronPtLow")),
+        subleadElectronPtLow_(iConfig.getUntrackedParameter<double>("SubleadElectronPtLow")),
+        zMassWindow_(iConfig.getUntrackedParameter<double>("ZMassWindow")),
+        realData_(iConfig.getUntrackedParameter<bool>("RealData"))
 {
    //now do what ever initialization is needed
    usesResource("TFileService");
@@ -89,7 +94,7 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
        {
            if ((*genParticlePtrIter)->mother()->pdgId() != 23) {continue;}
            if (abs((*genParticlePtrIter)->eta()) > 2.5) {continue;}
-           if ((*genParticlePtrIter)->pt() < 7) {continue;}
+           if ((*genParticlePtrIter)->pt() < electronPtLow_) {continue;}
            genElectron_._eventId = eventNum_;
            genElectron_._pt     = (*genParticlePtrIter)->pt();
            genElectron_._eta    = (*genParticlePtrIter)->eta();
@@ -134,7 +139,7 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
             genElectronPtrIter != genElectronPtrVec_.end();
             ++genElectronPtrIter)
        {
-           if ((*genElectronPtrIter)->pt() < 10) {continue;} // both pt need to be greater than 10GeV
+           if ((*genElectronPtrIter)->pt() < subleadElectronPtLow_) {continue;} // both pt need to be greater than 10GeV
            math::XYZTLorentzVector iP4_= (*genElectronPtrIter)->p4();
            for (std::vector<edm::Ptr<reco::GenParticle> >::iterator jIter = genElectronPtrIter+1;
                 jIter != genElectronPtrVec_.end();
@@ -142,8 +147,8 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
            {
                math::XYZTLorentzVector jP4_ = (*jIter)->p4();
                if ((*genElectronPtrIter)->charge() * (*jIter)->charge() != -1) {continue;} // need to have opposite charge
-               if ((iP4_+jP4_).M()<81 || (iP4_+jP4_).M()>101) {continue;} // invM need to be within Z +/-10GeV window
-               if (std::max((*genElectronPtrIter)->pt(), (*jIter)->pt()) < 20) {continue;} // leading pt need to be greater than 20GeV
+               if ((iP4_+jP4_).M()<(91.-zMassWindow_) || (iP4_+jP4_).M()>(91+zMassWindow_)) {continue;} // invM need to be within Z +/-10GeV window
+               if (std::max((*genElectronPtrIter)->pt(), (*jIter)->pt()) < leadElectronPtLow_) {continue;}
                ePairInZMassVec_.push_back(std::make_pair(*genElectronPtrIter, *jIter));
            }
        }
@@ -195,9 +200,9 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
                     {return lhs->energy() > rhs->energy();} );
        patElectronPtrVec_.erase(
                std::remove_if(patElectronPtrVec_.begin(), patElectronPtrVec_.end(),
-                                [](const edm::Ptr<pat::Electron>& e)
-                                {return (e->pt() < 7) || (abs(e->eta()) > 2.5);}),
-               patElectronPtrVec_.end()); // pt need to be larger than 7 GeV; and in barrel
+                                [this](const edm::Ptr<pat::Electron>& e)
+                                {return (e->pt() < electronPtLow_) || (abs(e->eta()) > 2.5);}),
+               patElectronPtrVec_.end()); // In barrel
 
        //* Loop through pat::Electrons --------------------- */
        std::vector<std::pair<edm::Ptr<pat::Electron>, edm::Ptr<pat::Electron> > > patEPairInZMassVec_{};
@@ -213,7 +218,7 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
            patElectronTree_->Fill();
            //* --------------------------------------------- */
-           if ((*patElectronPtrIter)->pt() < 10) {continue;} // both pt need to be greater than 10GeV
+           if ((*patElectronPtrIter)->pt() < subleadElectronPtLow_) {continue;}
            math::XYZTLorentzVector iP4_{(*patElectronPtrIter)->p4()};
            for (std::vector<edm::Ptr<pat::Electron> >::const_iterator jIter = patElectronPtrIter+1;
                 jIter != patElectronPtrVec_.end();
@@ -221,8 +226,8 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
            {
                math::XYZTLorentzVector jP4_{(*jIter)->p4()};
                if ((*patElectronPtrIter)->charge() * (*jIter)->charge() != -1) {continue;} // need to have opposite charge
-               if ((iP4_+jP4_).M()<81 || (iP4_+jP4_).M()>101) {continue;} // same as above
-               if (std::max((*patElectronPtrIter)->pt(), (*jIter)->pt()) < 20) {continue;}
+               if ((iP4_+jP4_).M()<(91-zMassWindow_) || (iP4_+jP4_).M()>(91+zMassWindow_)) {continue;} // same as above
+               if (std::max((*patElectronPtrIter)->pt(), (*jIter)->pt()) < leadElectronPtLow_) {continue;}
                patEPairInZMassVec_.push_back(std::make_pair(*patElectronPtrIter, *jIter));
            }
        }

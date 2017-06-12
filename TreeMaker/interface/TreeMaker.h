@@ -49,6 +49,11 @@ namespace sidm {
           edm::Service<TFileService> fs_;
           edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticleToken_;
           edm::EDGetTokenT<edm::View<pat::Electron> > patElectronToken_;
+          double electronPtLow_;
+          double leadElectronPtLow_;
+          double subleadElectronPtLow_;
+          double zMassWindow_;
+          bool realData_;
     
           TTree* genElectronTree_;
           sidm::Electron genElectron_;
