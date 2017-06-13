@@ -56,7 +56,6 @@ sidm::TreeMaker::~TreeMaker()
    // do anything here that needs to be done at desctruction time
    // (e.g. close files, deallocate resources etc.)
     eventNum_ = 0;
-    genElectronPtrVec_.clear();
 }
 
 
@@ -70,6 +69,7 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 {
   using namespace edm;
 
+  std::vector<edm::Ptr<reco::GenParticle> > genElectronPtrVec_{};
   if (!realData_)
   {
     Handle<View<reco::GenParticle> > genParticleHdl_;
@@ -78,7 +78,6 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
     const std::vector<edm::Ptr<reco::GenParticle> > genParticlePtrVec_ = genParticleHdl_->ptrs();
 
     //std::vector<const reco::Candidate*> electronFromGenZPtrVec_{};
-    genElectronPtrVec_.clear();
     //* Loop through reco::GenParticles ---------------------- */
     for (std::vector<edm::Ptr<reco::GenParticle> >::const_iterator genParticlePtrIter = genParticlePtrVec_.begin();
          genParticlePtrIter != genParticlePtrVec_.end();
@@ -221,7 +220,7 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
         std::remove_if(
           patElectronPtrVec_.begin(),
           patElectronPtrVec_.end(),
-          [this](const edm::Ptr<pat::Electron>& patE)
+          [genElectronPtrVec_](const edm::Ptr<pat::Electron>& patE)
           {
             bool match = false;
             std::vector<edm::Ptr<reco::GenParticle> >::const_iterator genIter;

@@ -82,7 +82,6 @@ namespace sidm {
           sidm::Electron patElectron3_;
           sidm::Electron patElectron4_;
     
-          std::vector<edm::Ptr<reco::GenParticle> > genElectronPtrVec_;
           Int_t eventNum_;
     };
 
