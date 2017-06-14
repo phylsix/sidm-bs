@@ -67,30 +67,25 @@ sidm::TreeMaker::~TreeMaker()
 void
 sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-  using namespace edm;
 
   std::vector<edm::Ptr<reco::GenParticle> > genElectronPtrVec_{};
-  if (!realData_)
+  if (!realData_) // has GEN information
   {
-    Handle<View<reco::GenParticle> > genParticleHdl_;
+    edm::Handle<edm::View<reco::GenParticle> > genParticleHdl_;
     iEvent.getByToken(genParticleToken_, genParticleHdl_);
 
     const std::vector<edm::Ptr<reco::GenParticle> > genParticlePtrVec_ = genParticleHdl_->ptrs();
 
-    //std::vector<const reco::Candidate*> electronFromGenZPtrVec_{};
     //* Loop through reco::GenParticles ---------------------- */
     for (std::vector<edm::Ptr<reco::GenParticle> >::const_iterator genParticlePtrIter = genParticlePtrVec_.begin();
          genParticlePtrIter != genParticlePtrVec_.end();
          ++genParticlePtrIter)
     {
-        if (abs((*genParticlePtrIter)->pdgId()) != 11 &&
-                (*genParticlePtrIter)->pdgId()  != 23) {continue;}
 
-        //* Gen Electron ------------------------------ */
-        if (abs((*genParticlePtrIter)->pdgId()) != 11) {continue;}
-        if ((*genParticlePtrIter)->mother()->pdgId() != 23) {continue;}
-        if (abs((*genParticlePtrIter)->eta()) > (2.5)) {continue;}
-        if ((*genParticlePtrIter)->pt() < electronPtLow_) {continue;}
+        if ( abs((*genParticlePtrIter)->pdgId()) != 11 )      {continue;}
+        if ( (*genParticlePtrIter)->mother()->pdgId() != 23 ) {continue;}
+        if ( abs((*genParticlePtrIter)->eta()) > 2.5 )        {continue;}
+        if ( (*genParticlePtrIter)->pt() < electronPtLow_ )   {continue;}
         genElectron_._eventId = eventNum_;
         genElectron_._pt     = (*genParticlePtrIter)->pt();
         genElectron_._eta    = (*genParticlePtrIter)->eta();
@@ -99,27 +94,6 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
         genElectronTree_->Fill();
         genElectronPtrVec_.push_back(*genParticlePtrIter);
-            // std::cout<<"Event# "<<std::setw(5)<<eventNum_<<"    ElectronMother-> "<<(*genParticlePtrIter)->mother()->pdgId()<<std::endl;
-
-        /* Gen Z ----------------------------------
-        if ((*genParticlePtrIter)->pdgId() == 23)
-        {
-            if ((*genParticlePtrIter)->numberOfDaughters() != 2) {continue;}
-            const reco::Candidate* d1 = (*genParticlePtrIter)->daughter(0);
-            const reco::Candidate* d2 = (*genParticlePtrIter)->daughter(1);
-            if ( (abs(d1->pdgId()) != 11) &&
-                 (abs(d2->pdgId()) != 11) &&
-                 (d1->charge() * d2->charge() != -1) ) {continue;}
-            Z_._eventId = eventNum_;
-            Z_._mass = (*genParticlePtrIter)->mass();
-
-            ZTree_->Fill();
-            electronFromGenZPtrVec_.push_back(d1);
-            electronFromGenZPtrVec_.push_back(d2);
-
-            //std::cout<<"Event# "<<std::setw(5)<<eventNum_<<"    Z Mass-->"<<(*genParticlePtrIter)->mass()<<std::endl;
-        }
-        -----------------------------------------*/
     }
 
     genElectronPtrVec_.erase(
@@ -127,8 +101,15 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
           [this](const edm::Ptr<reco::GenParticle>& e)
           {return (e->pt() < subleadElectronPtLow_); }),
         genElectronPtrVec_.end());
+    int numGenElectronP = std::count_if(genElectronPtrVec_.begin(), genElectronPtrVec_.end(),
+                                        [](const edm::Ptr<reco::GenParticle>& e)
+                                        {return e->charge() > 0;});
+    int numGenElectronM = std::count_if(genElectronPtrVec_.begin(), genElectronPtrVec_.end(),
+                                        [](const edm::Ptr<reco::GenParticle>& e)
+                                        {return e->charge() < 0;});
+
     //* More than 4 Gen Electron ------------------------------ */
-    if (genElectronPtrVec_.size() >= 4)
+    if ( (numGenElectronP >= 2) && (numGenElectronM >=2) )
     {
         std::sort(genElectronPtrVec_.begin(), genElectronPtrVec_.end(),
                      [](edm::Ptr<reco::GenParticle>& lhs, edm::Ptr<reco::GenParticle>& rhs)
@@ -145,24 +126,37 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
                  ++jIter)
             {
                 math::XYZTLorentzVector jP4_ = (*jIter)->p4();
-                if ((*genElectronPtrIter)->charge() * (*jIter)->charge() != -1) {continue;} // need to have opposite charge
-                if ((iP4_+jP4_).M()<(91.-zMassWindow_) || (iP4_+jP4_).M()>(91+zMassWindow_)) {continue;} // invM need to be within Z +/-10GeV window
-                if (std::max((*genElectronPtrIter)->pt(), (*jIter)->pt()) < leadElectronPtLow_) {continue;}
-                ePairInZMassVec_.push_back(std::make_pair(*genElectronPtrIter, *jIter));
+
+                // need to have opposite charge
+                if ( (*genElectronPtrIter)->charge() * (*jIter)->charge() != -1 )                       {continue;}
+                // invM need to be within Z +/-10GeV window
+                if ( ((91-zMassWindow_) >= (iP4_+jP4_).M()) || ((iP4_+jP4_).M() >= (91+zMassWindow_)) ) {continue;}
+                if ( std::max((*genElectronPtrIter)->pt(), (*jIter)->pt()) < leadElectronPtLow_ )       {continue;}
+                ePairInZMassVec_.emplace_back(std::make_pair(*genElectronPtrIter, *jIter));
             }
         }
+        std::sort(ePairInZMassVec_.begin(), ePairInZMassVec_.end(),
+                  [](std::pair<edm::Ptr<reco::GenParticle>, edm::Ptr<reco::GenParticle> >& lhs,
+                     std::pair<edm::Ptr<reco::GenParticle>, edm::Ptr<reco::GenParticle> >& rhs)
+                  {
+                      float dR_l = deltaR(*(lhs.first), *(lhs.second));
+                      float dR_r = deltaR(*(rhs.first), *(rhs.second));
+                      return dR_l < dR_r;
+                  });
+        ePairInZMassVec_.erase(
+            std::remove_if(ePairInZMassVec_.begin()+1,
+                           ePairInZMassVec_.end(),
+                           [ePairInZMassVec_](std::pair<edm::Ptr<reco::GenParticle>, edm::Ptr<reco::GenParticle> >& p)
+                           {return (p.first  == ePairInZMassVec_.begin()->first) ||
+                                   (p.first  == ePairInZMassVec_.begin()->second)||
+                                   (p.second == ePairInZMassVec_.begin()->first) ||
+                                   (p.second == ePairInZMassVec_.begin()->second);}),
+            ePairInZMassVec_.end()
+        );
 
         //* More than 2 Z reconstructed from Gen Electrons --------------- */
         if(ePairInZMassVec_.size() >= 2)
         {
-            std::sort(ePairInZMassVec_.begin(), ePairInZMassVec_.end(),
-                         [](std::pair<edm::Ptr<reco::GenParticle>, edm::Ptr<reco::GenParticle> >& lhs,
-                            std::pair<edm::Ptr<reco::GenParticle>, edm::Ptr<reco::GenParticle> >& rhs)
-                         {
-                             float dR_l = deltaR(lhs.first->eta(), lhs.first->phi(), lhs.second->eta(), lhs.second->phi());
-                             float dR_r = deltaR(rhs.first->eta(), rhs.first->phi(), rhs.second->eta(), rhs.second->phi());
-                             return dR_l < dR_r;
-                         });
             genZ1_._eventId = eventNum_;
             genZ1_._mass = (ePairInZMassVec_[0].first->p4() + ePairInZMassVec_[0].second->p4()).M();
             genZ1_._pt   = (ePairInZMassVec_[0].first->p4() + ePairInZMassVec_[0].second->p4()).Pt();
@@ -184,21 +178,11 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
             genElectronPtrVec_.push_back(ePairInZMassVec_[1].first);
             genElectronPtrVec_.push_back(ePairInZMassVec_[1].second);
 
-            /*
-            std::vector<std::pair<edm::Ptr<reco::GenParticle>, edm::Ptr<reco::GenParticle> > >::iterator electronPairIter;
-            for (electronPairIter = ePairInZMassVec_.begin();
-                 electronPairIter != ePairInZMassVec_.end();
-                 ++electronPairIter)
-            {
-                float invM_ = (electronPairIter->first->p4() + electronPairIter->second->p4()).M();
-                std::cout<<invM_<<" ";
-            }
-            std::cout<<std::endl;*/
         }
     }
   } // endif (!realData_)
 
-  Handle<View<pat::Electron> > patElectronHdl_;
+  edm::Handle<edm::View<pat::Electron> > patElectronHdl_;
   iEvent.getByToken(patElectronToken_, patElectronHdl_);
 
   std::vector<edm::Ptr<pat::Electron> > patElectronPtrVec_ = patElectronHdl_->ptrs();
@@ -228,7 +212,8 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
                  genIter!= genElectronPtrVec_.end();
                  ++genIter)
             {
-              if (deltaR(patE->eta(), patE->phi(), (*genIter)->eta(), (*genIter)->phi())<0.1)
+              if ((deltaR(*patE, **genIter)<0.1) &&
+                  (patE->charge()*(*genIter)->charge() == 1))
               {
                 match = true;
                 break;
@@ -268,21 +253,32 @@ sidm::TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
               if ((*patElectronPtrIter)->charge() * (*jIter)->charge() != -1) {continue;} // need to have opposite charge
               if ((iP4_+jP4_).M()<(91-zMassWindow_) || (iP4_+jP4_).M()>(91+zMassWindow_)) {continue;} // same as above
               if (std::max((*patElectronPtrIter)->pt(), (*jIter)->pt()) < leadElectronPtLow_) {continue;}
-              patEPairInZMassVec_.push_back(std::make_pair(*patElectronPtrIter, *jIter));
+              patEPairInZMassVec_.emplace_back(std::make_pair(*patElectronPtrIter, *jIter));
           }
       }
+
+      std::sort(patEPairInZMassVec_.begin(), patEPairInZMassVec_.end(),
+          [](std::pair<edm::Ptr<pat::Electron>, edm::Ptr<pat::Electron> >& lhs,
+             std::pair<edm::Ptr<pat::Electron>, edm::Ptr<pat::Electron> >& rhs)
+          {
+              float dR_l = deltaR(*(lhs.first), *(lhs.second));
+              float dR_r = deltaR(*(rhs.first), *(rhs.second));
+              return dR_l < dR_r;
+          });
+      patEPairInZMassVec_.erase(
+          std::remove_if(patEPairInZMassVec_.begin()+1,
+                         patEPairInZMassVec_.end(),
+                         [patEPairInZMassVec_](std::pair<edm::Ptr<pat::Electron>, edm::Ptr<pat::Electron> >& p)
+                         {return (p.first  == patEPairInZMassVec_.begin()->first)  ||
+                                 (p.first  == patEPairInZMassVec_.begin()->second) ||
+                                 (p.second == patEPairInZMassVec_.begin()->first)  ||
+                                 (p.second == patEPairInZMassVec_.begin()->second);}),
+          patEPairInZMassVec_.end()
+      );
 
       //* More than 2 Z reconstructed from pat::Electrons ---------------*/
       if (patEPairInZMassVec_.size() >= 2)
       {
-          std::sort(patEPairInZMassVec_.begin(), patEPairInZMassVec_.end(),
-                       [](std::pair<edm::Ptr<pat::Electron>, edm::Ptr<pat::Electron> >& lhs,
-                          std::pair<edm::Ptr<pat::Electron>, edm::Ptr<pat::Electron> >& rhs)
-                       {
-                           float dR_l = deltaR(lhs.first->eta(), lhs.first->phi(), lhs.second->eta(), lhs.second->phi());
-                           float dR_r = deltaR(rhs.first->eta(), rhs.first->phi(), rhs.second->eta(), rhs.second->phi());
-                           return dR_l < dR_r;
-                       });
           patZ1_._eventId = eventNum_;
           patZ1_._mass = (patEPairInZMassVec_[0].first->p4() + patEPairInZMassVec_[0].second->p4()).M();
           patZ1_._pt   = (patEPairInZMassVec_[0].first->p4() + patEPairInZMassVec_[0].second->p4()).Pt();
@@ -315,10 +311,6 @@ sidm::TreeMaker::beginJob()
     genElectronTree_->Branch("eta", &genElectron_._eta, "eta/F");
     genElectronTree_->Branch("phi", &genElectron_._phi, "phi/F");
     genElectronTree_->Branch("energy", &genElectron_._energy, "energy/F");
-
-    // ZTree_ = fs_->make<TTree>("ZTree", "Gen Z bosons");
-    // ZTree_->Branch("eventId", &Z_._eventId, "eventId/I");
-    // ZTree_->Branch("mass", &Z_._mass, "mass/F");
 
     genZeeTree_ = fs_->make<TTree>("genZeeTree", "Gen info on Zee");
     genZeeTree_->Branch("eventId", &genZ1_._eventId , "eventId/I");
