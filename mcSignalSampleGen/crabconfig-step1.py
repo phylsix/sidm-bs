@@ -8,12 +8,12 @@ config.General.transferLogs = False
 
 config.JobType.pluginName = 'PrivateMC'
 config.JobType.psetName = 'step1.py'
-config.JobType.inputFiles = ['sidm_events.lhe']
+#config.JobType.inputFiles = ['sidm_events.lhe']
 
 config.Data.outputPrimaryDataset = 'ZpEE-1GeV-1cm'
 config.Data.splitting = 'EventBased'
-config.Data.unitsPerJob = 3000
-NJOBS = 1000  # This is not a configuration parameter, but an auxiliary variable that we use in the next line.
+config.Data.unitsPerJob = 1000
+NJOBS = 300  # This is not a configuration parameter, but an auxiliary variable that we use in the next line.
 config.Data.totalUnits = config.Data.unitsPerJob * NJOBS
 config.Data.outLFNDirBase = '/store/user/%s/' % (getUsernameFromSiteDB())
 config.Data.publication = True
