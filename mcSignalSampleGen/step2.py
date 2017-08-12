@@ -31,11 +31,9 @@ process.maxEvents = cms.untracked.PSet(
 # Input source
 process.source = cms.Source("PoolSource",
     dropDescendantsOfDroppedBranches = cms.untracked.bool(False),
-                            fileNames = cms.untracked.vstring([
-                                'root://cmsxrootd.fnal.gov//store/user/wsi/Zp-1GeV_ct-1cm/SIDM-MC-test/170809_001937/0000/step1_1.root',
-                                'root://cmsxrootd.fnal.gov//store/user/wsi/Zp-1GeV_ct-1cm/SIDM-MC-test/170809_001937/0000/step1_2.root',
-                                'root://cmsxrootd.fnal.gov//store/user/wsi/Zp-1GeV_ct-1cm/SIDM-MC-test/170809_001937/0000/step1_3.root'
-                            ]),
+                            fileNames = cms.untracked.vstring(
+                                'root://cmsxrootd.fnal.gov//store/user/wsi/ZpEE-1GeV-1cm/ZpEE-1GeV-1cm_GEN_SIM/170811_015732/*/step1_*.root'
+                            ),
     inputCommands = cms.untracked.vstring('keep *', 
         'drop *_genParticles_*_*', 
         'drop *_genParticlesForJets_*_*', 

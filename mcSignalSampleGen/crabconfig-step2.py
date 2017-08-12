@@ -11,8 +11,8 @@ config.JobType.psetName = 'step2.py'
 config.Data.inputDataset = '/ZpEE-1GeV-1cm/wsi-ZpEE-1GeV-1cm_GEN_SIM-0cd17f6dccc217863c4c100da1ad457f/USER'
 config.Data.inputDBS = 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader/'
 
-config.Data.splitting = 'LumiBased'
-config.Data.unitsPerJob = 3000
+config.Data.splitting = 'EventAwareLumiBased'
+config.Data.unitsPerJob = 1000
 config.Data.publication = True
 config.Data.outLFNDirBase = '/store/user/%s/' % (getUsernameFromSiteDB())
 config.Data.outputDatasetTag = 'ZpEE-1GeV-1cm_DIGI_RAW_HLT'
