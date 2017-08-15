@@ -6,6 +6,7 @@ process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.threshold = 'ERROR'
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.options   = cms.untracked.PSet( SkipEvent = cms.untracked.vstring('ProductNotFound'))
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring([
@@ -19,7 +20,14 @@ jetComponentParams = cms.PSet(
 
 process.jetComponent = cms.EDAnalyzer('sidm::jetComponent',
                                       jetComponentParams,
-                                      PatJetTag = cms.untracked.InputTag('slimmedJets')
+                                      GenJetTag_1 = cms.untracked.InputTag('slimmedGenJets'),
+                                      GenJetTag_2 = cms.untracked.InputTag('slimmedGenJetsAK8'),
+
+                                      PatJetTag_1 = cms.untracked.InputTag('slimmedJets'),
+                                      PatJetTag_2 = cms.untracked.InputTag('slimmedJetsAK8'),
+                                      PatJetTag_3 = cms.untracked.InputTag('slimmedJetsPuppi'),
+                                      PatJetTag_4 = cms.untracked.InputTag('slimmedJetsAK8PFCHSSoftDropPacked'),
+                                      PatJetTag_5 = cms.untracked.InputTag('slimmedJetsAK8PFPuppiSoftDropPacked')
 )
 
 process.TFileService = cms.Service("TFileService",
