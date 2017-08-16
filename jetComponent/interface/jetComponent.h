@@ -44,6 +44,7 @@ namespace sidm {
             // ----------member data ---------------------------
 
             edm::Service<TFileService> fs_;
+            const edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticleTk_;
             const edm::EDGetTokenT<edm::View<reco::GenJet> > genJetTk_;
             const edm::EDGetTokenT<edm::View<reco::GenJet> > genJetAK8Tk_;
             const edm::EDGetTokenT<edm::View<pat::Jet> > patJetTk_;
@@ -51,7 +52,6 @@ namespace sidm {
             const edm::EDGetTokenT<edm::View<pat::Jet> > patJetPuppiTk_;
             const edm::EDGetTokenT<edm::View<pat::Jet> > patJetAK8CHSTk_;
             const edm::EDGetTokenT<edm::View<pat::Jet> > patJetAK8PuppiTk_;
-            const edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticleTk_;
 
             TTree* Gen_slimmedGenJets_;
             TTree* Gen_slimmedGenJetsAK8_;
@@ -70,6 +70,9 @@ namespace sidm {
             sidm::Jet jetPatPuppi_;
             sidm::Jet jetPatAK8PFCHSSoftDropPacked_;
             sidm::Jet jetPatAK8PFPuppiSoftDropPacked_;
+
+            TTree* Gen_electrons_;
+            sidm::Ep epGen_;
 
             Int_t eventNum_;
     };

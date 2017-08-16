@@ -21,6 +21,7 @@
 #include "DataFormats/Common/interface/Handle.h"
 
 sidm::jetComponent::jetComponent(const edm::ParameterSet& iConfig):
+    genParticleTk_(consumes<edm::View<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("GenParticleTag_", edm::InputTag("prunedGenParticles")))),
     genJetTk_(consumes<edm::View<reco::GenJet> >(iConfig.getUntrackedParameter<edm::InputTag>("GenJetTag_1", edm::InputTag("slimmedGenJets")))),
     genJetAK8Tk_(consumes<edm::View<reco::GenJet> >(iConfig.getUntrackedParameter<edm::InputTag>("GenJetTag_2", edm::InputTag("slimmedGenJetsAK8")))),
     patJetTk_(consumes<edm::View<pat::Jet> >(iConfig.getUntrackedParameter<edm::InputTag>("PatJetTag_1",edm::InputTag("slimmedJets"))) ),
@@ -65,6 +66,20 @@ sidm::jetComponent::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
         jetGen_._mass = j.mass();
         Gen_slimmedGenJets_->Fill();
     }
+
+    Handle<View<reco::GenParticle> > genParticleHdl_;
+    iEvent.getByToken(genParticleTk_, genParticleHdl_);
+
+    for ( const auto& p : *genParticleHdl_ ) {
+        if ( abs(p.pdgId()) != 11 ) {continue;}
+        epGen_._eventId = eventNum_;
+        epGen_._eta = p.eta();
+        epGen_._phi = p.phi();
+        epGen_._pt = p.pt();
+        epGen_._energy = p.energy();
+        Gen_electrons_->Fill();
+    }
+
 
     Handle<View<reco::GenJet> > genJetAK8Hdl_;
     iEvent.getByToken(genJetAK8Tk_, genJetAK8Hdl_);
@@ -165,6 +180,16 @@ sidm::jetComponent::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 void 
 sidm::jetComponent::beginJob()
 {
+    /// generated electrons
+    Gen_electrons_ = fs_->make<TTree>("Gen_electrons", "gen electrons");
+
+    Gen_electrons_->Branch("eventId", &epGen_._eventId, "eventId/I");
+    Gen_electrons_->Branch("eta",     &epGen_._eta,     "eta/F");
+    Gen_electrons_->Branch("phi",     &epGen_._phi,     "phi/F");
+    Gen_electrons_->Branch("pt",      &epGen_._pt,      "pt/F");
+    Gen_electrons_->Branch("energy",  &epGen_._energy,  "energy/F");
+
+
     /// generated jets
     Gen_slimmedGenJets_ = fs_->make<TTree>("Gen_slimmedGenJets", "slimmedGenJets");
 

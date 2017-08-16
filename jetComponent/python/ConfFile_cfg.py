@@ -319,7 +319,9 @@ process.jetComponent = cms.EDAnalyzer('sidm::jetComponent',
                                       PatJetTag_2 = cms.untracked.InputTag('slimmedJetsAK8'),
                                       PatJetTag_3 = cms.untracked.InputTag('slimmedJetsPuppi'),
                                       PatJetTag_4 = cms.untracked.InputTag('slimmedJetsAK8PFCHSSoftDropPacked'),
-                                      PatJetTag_5 = cms.untracked.InputTag('slimmedJetsAK8PFPuppiSoftDropPacked')
+                                      PatJetTag_5 = cms.untracked.InputTag('slimmedJetsAK8PFPuppiSoftDropPacked'),
+
+                                      GenParticleTag_ = cms.untracked.InputTag('prunedGenParticles')
 )
 
 process.TFileService = cms.Service("TFileService",
