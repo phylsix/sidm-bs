@@ -33,7 +33,8 @@ process.maxEvents = cms.untracked.PSet(
 process.source = cms.Source("LHESource",
     dropDescendantsOfDroppedBranches = cms.untracked.bool(False),
                             fileNames =
-                            cms.untracked.vstring('root://cmsxrootd.fnal.gov//store/user/wsi/MC/ZpEE300k.lhe'),
+                            #cms.untracked.vstring('root://cmsxrootd.fnal.gov//store/user/wsi/MC/ZpEE300k.lhe'),
+                            cms.untracked.vstring('root://cmsxrootd.fnal.gov//store/user/wsi/MC/ZpEE_0.1_e-12_10k.lhe'),
     inputCommands = cms.untracked.vstring('keep *', 
         'drop LHEXMLStringProduct_*_*_*')
 )

@@ -3,7 +3,6 @@ import FWCore.ParameterSet.Config as cms
 process = cms.Process("mcValidation")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
-process.load("SimGeneral.HepPDTESSource.pythiapdt_cfi")
 process.MessageLogger.cerr.threshold = 'ERROR'
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
@@ -316,18 +315,7 @@ process.mcValidation = cms.EDAnalyzer('sidm::mcValidation',
 
                                       GenParticleTag_ = cms.untracked.InputTag('prunedGenParticles')
 )
-
-process.printTree = cms.EDAnalyzer("ParticleTreeDrawer",
-                                   src = cms.InputTag("genParticles"),                                                                 
-                                   printP4 = cms.untracked.bool(False),
-                                   printPtEtaPhi = cms.untracked.bool(False),
-                                   printVertex = cms.untracked.bool(False),
-                                   printStatus = cms.untracked.bool(False),
-                                   printIndex = cms.untracked.bool(False),
-                                   status = cms.untracked.vint32( 3 )
-                                   )
-
 process.TFileService = cms.Service("TFileService",
                                    fileName = cms.string("$CMSSW_BASE/src/sidm-bs/jetComponent/data/mcvalidation.root"))
 
-process.p = cms.Path(process.mcValidation * process.printTree)
+process.p = cms.Path(process.mcValidation)

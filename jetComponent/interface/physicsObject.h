@@ -16,6 +16,9 @@ namespace sidm {
     class objCompound : public objBase{
     public:
         float _invM;
+        float _dEta;
+        float _dPhi;
+        float _dR;
 
     };
     
@@ -29,7 +32,9 @@ namespace sidm {
     public:
         Ep p;
         Ep e;
-        float _dR_ep;
+        float _dv_x;
+        float _dv_y;
+        float _dv_z;
     };
 
     class Ps : public objCompound{

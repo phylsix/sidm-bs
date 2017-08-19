@@ -3,6 +3,7 @@
 // Package:    sidm-bs/mcValidation
 // Class:      mcValidation
 #include <algorithm>
+#include <cmath>
 
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
@@ -40,7 +41,9 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 
     electron_N = std::count_if(cbegin(*genParticleHdl_),
                                cend(*genParticleHdl_),
-                               [](const auto& p){ return p.pdgId() == 11; });
+                               [](const auto& p){ return p.pdgId() == 11 && 
+                                                         p.status() == 1 &&
+                                                         p.pt() > 2. ; });
     electron_from_zp_N = std::count_if(cbegin(*genParticleHdl_),
                                        cend(*genParticleHdl_),
                                        [](const auto& p){ return p.pdgId() == 11 &&
@@ -48,7 +51,9 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 
     positron_N = std::count_if(cbegin(*genParticleHdl_),
                                cend(*genParticleHdl_),
-                               [](const auto& p){ return p.pdgId() == -11; });
+                               [](const auto& p){ return p.pdgId() == -11 &&
+                                                         p.status() == 1  &&
+                                                         p.pt() > 2. ; });
     positron_from_zp_N = std::count_if(cbegin(*genParticleHdl_),
                                        cend(*genParticleHdl_),
                                        [](const auto& p){ return p.pdgId() == -11 &&
@@ -61,15 +66,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                          cend(*genParticleHdl_),
                          [](const auto& p){ return p.pdgId() == 35; });
 
-    /*--
-    cout << "[" << eventNum_ << "] Status (";
-    for_each(cbegin(*genParticleHdl_),
-             cend(*genParticleHdl_),
-             [](const auto& p){
-              if (abs(p.pdgId()) == 11 && p.mother()->pdgId() != 32)
-                cout << p.status() << ", ";});
-    cout << ")" << endl;
-    --*/
+
     eventTree_->Fill();
 
     for ( const auto& p : *genParticleHdl_ ) {
@@ -123,12 +120,15 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
             }
 
             zp_._eventId = eventNum_;
-            zp_._pt = p.pt();
-            zp_._mass = p.mass();
-            zp_._invM = ( p.daughter(0)->p4() +
-                          p.daughter(1)->p4() ).M();
-            zp_._dR_ep = deltaR( *(p.daughter(0)),
-                                 *(p.daughter(1)) );
+            zp_._pt      = p.pt();
+            zp_._mass    = p.mass();
+            zp_._invM    = ( p.daughter(0)->p4() + p.daughter(1)->p4() ).M();
+            zp_._dR      = deltaR( *(p.daughter(0)), *(p.daughter(1)) );
+            zp_._dEta    = std::abs( p.daughter(0)->eta() - p.daughter(1)->eta() );
+            zp_._dPhi    = std::abs( p.daughter(0)->phi() - p.daughter(1)->phi() );
+            zp_._dv_x    = p.daughter(0)->vx();
+            zp_._dv_y    = p.daughter(0)->vy();
+            zp_._dv_z    = p.daughter(0)->vz();
 
             darkPhoton_reco_->Fill(); 
 
@@ -151,9 +151,12 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
             }
 
             ps_._eventId = eventNum_;
-            ps_._mass = p.mass();
-            ps_._invM = ( p.daughter(0)->p4() +
-                          p.daughter(1)->p4() ).M();
+            ps_._mass    = p.mass();
+            ps_._invM    = ( p.daughter(0)->p4() + p.daughter(1)->p4() ).M();
+            ps_._dEta    =  std::abs( p.daughter(0)->eta() - p.daughter(1)->eta() );
+            ps_._dPhi    =  std::abs( p.daughter(0)->phi() - p.daughter(1)->phi() );
+            ps_._dR      = deltaR( *(p.daughter(0)), *(p.daughter(1)) );
+
             pscalar_reco_->Fill();
 
         }
@@ -186,12 +189,20 @@ sidm::mcValidation::beginJob()
     darkPhoton_reco_->Branch("invm", &zp_._invM, "invm/F");
     darkPhoton_reco_->Branch("pt_e", &zp_.e._pt, "pt_e/F");
     darkPhoton_reco_->Branch("pt_p", &zp_.p._pt, "pt_p/F");
-    darkPhoton_reco_->Branch("dR_ep", &zp_._dR_ep, "dR_ep/F");
+    darkPhoton_reco_->Branch("dR_ep", &zp_._dR, "dR_ep/F");
+    darkPhoton_reco_->Branch("dEta_ep", &zp_._dEta, "dEta_ep/F");
+    darkPhoton_reco_->Branch("dPhi_ep", &zp_._dPhi, "dPhi_ep/F");
+    darkPhoton_reco_->Branch("dv_x", &zp_._dv_x, "dv_x/F");
+    darkPhoton_reco_->Branch("dv_y", &zp_._dv_y, "dv_y/F");
+    darkPhoton_reco_->Branch("dv_z", &zp_._dv_z, "dv_z/F");
 
     pscalar_reco_ = fs_->make<TTree>("pscalar_reco", "gen pseudo-scalars");
     pscalar_reco_->Branch("eventId", &ps_._eventId, "eventId/I");
     pscalar_reco_->Branch("mass", &ps_._mass, "mass/F");
     pscalar_reco_->Branch("invm", &ps_._invM, "invm/F");
+    pscalar_reco_->Branch("dEta", &ps_._dEta, "dEta/F");
+    pscalar_reco_->Branch("dPhi", &ps_._dPhi, "dPhi/F");
+    pscalar_reco_->Branch("dR", &ps_._dR, "dR/F");
 
 }
 
