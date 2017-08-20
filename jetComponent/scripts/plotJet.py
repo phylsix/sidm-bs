@@ -11,7 +11,7 @@ ROOT.gStyle.SetPadTickX(1)
 ROOT.gStyle.SetPadTickY(1)
 
 
-f = ROOT.TFile(os.path.join(PLUGINBASE, 'data', 'output.root'))
+f = ROOT.TFile(os.path.join(PLUGINBASE, 'mydata', 'output.root'))
 
 c0 = ROOT.TCanvas('c0','',500,500)
 c1 = ROOT.TCanvas('c1','',500,500)

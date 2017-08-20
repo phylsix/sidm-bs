@@ -12,7 +12,7 @@ ROOT.gStyle.SetPadTickY(1)
 ROOT.gStyle.SetPalette(ROOT.kRedBlue)
 
 
-f = ROOT.TFile(os.path.join(PLUGINBASE, 'data', 'mcvalidation.root'))
+f = ROOT.TFile(os.path.join(PLUGINBASE, 'mydata', 'mcvalidation0819.root'))
 
 c0 = ROOT.TCanvas('c0','',500,500)
 c1 = ROOT.TCanvas('c1','',500,500)
@@ -27,10 +27,10 @@ c8 = ROOT.TCanvas('c8','',500,500)
 darkPhotons = f.Get('mcValidation/darkPhoton_reco')
 pscalars    = f.Get('mcValidation/pscalar_reco')
 
-h_zp_m = ROOT.TH1F('h_zp_m_','',20,9,11) # 10GeV
+h_zp_m = ROOT.TH1F('h_zp_m_','',20,0.,0.2) # 0.1GeV
 h_ps_m = ROOT.TH1F('h_ps_m_','',30,98.5,101.5) # 100GeV
-h_ep_dEtadPhi = ROOT.TH2F('h_ep_dEtadPhi_','',100,0,7,100,0,7)
-h_ep_dR = ROOT.TH1F('h_ep_dR_','',100,0,7)
+h_ep_dEtadPhi = ROOT.TH2F('h_ep_dEtadPhi_','',100,0,0.1,100,0,0.1)
+h_ep_dR = ROOT.TH1F('h_ep_dR_','',100,0,0.15)
 h_ep_vxvy = ROOT.TH2F('h_ep_vxvy_','',100,-50,50,100,-50,50)
 h_ep_vz = ROOT.TH1F('h_ep_vz_','',100,-400,400)
 h_ep_r = ROOT.TH1F('h_ep_r_','',100,0,200) # range to be tuned
@@ -72,7 +72,7 @@ for h in hs_2D:
 
 c0.cd()
 h_zp_m.Draw()
-xt_0, yt_0 = rootTools.addAxisTitle("M [GeV]", "Num.Of.Entries / 0.1GeV")
+xt_0, yt_0 = rootTools.addAxisTitle("M [GeV]", "Num.Of.Entries / 0.01GeV")
 xt_0.Draw()
 yt_0.Draw()
 ht_0 = rootTools.addHistTitle("Inv Mass of Dark Photon")
@@ -158,15 +158,15 @@ rootTools.styleStatsBox([h_ps_dR],'fill')
 c8.Update()
 
 
-c0.Print(PLUGINBASE+'/plots/mcValidation.pdf(')
-c1.Print(PLUGINBASE+'/plots/mcValidation.pdf')
-c2.Print(PLUGINBASE+'/plots/mcValidation.pdf')
-c3.Print(PLUGINBASE+'/plots/mcValidation.pdf')
-c4.Print(PLUGINBASE+'/plots/mcValidation.pdf')
-c5.Print(PLUGINBASE+'/plots/mcValidation.pdf')
-c6.Print(PLUGINBASE+'/plots/mcValidation.pdf')
-c7.Print(PLUGINBASE+'/plots/mcValidation.pdf')
-c8.Print(PLUGINBASE+'/plots/mcValidation.pdf)')
+c0.Print(PLUGINBASE+'/plots/mcValidation0819.pdf(')
+c1.Print(PLUGINBASE+'/plots/mcValidation0819.pdf')
+c2.Print(PLUGINBASE+'/plots/mcValidation0819.pdf')
+c3.Print(PLUGINBASE+'/plots/mcValidation0819.pdf')
+c4.Print(PLUGINBASE+'/plots/mcValidation0819.pdf')
+c5.Print(PLUGINBASE+'/plots/mcValidation0819.pdf')
+c6.Print(PLUGINBASE+'/plots/mcValidation0819.pdf')
+c7.Print(PLUGINBASE+'/plots/mcValidation0819.pdf')
+c8.Print(PLUGINBASE+'/plots/mcValidation0819.pdf)')
 
-cmd = "cp {0}/plots/mcValidation.pdf /publicweb/w/wsi/public".format(PLUGINBASE)
+cmd = "cp {0}/plots/mcValidation0819.pdf /publicweb/w/wsi/public".format(PLUGINBASE)
 os.system(cmd)
