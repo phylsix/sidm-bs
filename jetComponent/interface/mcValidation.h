@@ -18,6 +18,7 @@
 #include "DataFormats/Common/interface/Ptr.h"
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 #include "DataFormats/Candidate/interface/Candidate.h"
+#include "DataFormats/Candidate/interface/VertexCompositePtrCandidate.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 
 #include "TTree.h"
@@ -42,6 +43,7 @@ namespace sidm {
 
             edm::Service<TFileService> fs_;
             const edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticleTk_;
+            const edm::EDGetTokenT<edm::View<reco::VertexCompositePtrCandidate> > ssVerticeTk_;
             
             TTree* eventTree_;
 

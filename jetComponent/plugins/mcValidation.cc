@@ -13,7 +13,8 @@
 #include "sidm-bs/jetComponent/interface/mcValidation.h"
 
 sidm::mcValidation::mcValidation(const edm::ParameterSet& iConfig):
-    genParticleTk_(consumes<edm::View<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("GenParticleTag_", edm::InputTag("prunedGenParticles"))))
+    genParticleTk_(consumes<edm::View<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("GenParticleTag_", edm::InputTag("prunedGenParticles")))),
+    ssVerticeTk_(consumes<edm::View<reco::VertexCompositePtrCandidate> >(iConfig.getUntrackedParameter<edm::InputTag>("SsVerticeTag_", edm::InputTag("slimmedSecondaryVertices"))))
 {
     usesResource("TFileService");
     eventNum_ = 0;
@@ -36,6 +37,10 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
     using namespace edm;
     using namespace std;
 
+
+    //--------------------
+    //----GEN PARTICLE----
+    //--------------------
     Handle<View<reco::GenParticle> > genParticleHdl_;
     iEvent.getByToken(genParticleTk_, genParticleHdl_);
 
@@ -163,6 +168,14 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
         }
     }
 
+    //--------------------
+    //----slimmedSecondaryVertices----
+    //--------------------
+    Handle<View<reco::VertexCompositePtrCandidate> > ssVerticeHdl_;
+    iEvent.getByToken(ssVerticeTk_, ssVerticeHdl_);
+
+    cout << "[" << eventNum_ << "] "
+         << "Num.Of.SecondaryVertices: " << ssVerticeHdl_->size() << endl;
 
     ++eventNum_;
 

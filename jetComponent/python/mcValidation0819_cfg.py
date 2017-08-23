@@ -30,7 +30,8 @@ mcValidationParams = cms.PSet(
 process.mcValidation = cms.EDAnalyzer('sidm::mcValidation',
                                       mcValidationParams,
 
-                                      GenParticleTag_ = cms.untracked.InputTag('prunedGenParticles')
+                                      GenParticleTag_ = cms.untracked.InputTag('prunedGenParticles'),
+                                      SsVerticeTag_ = cms.untracked.InputTag('slimmedSecondaryVertices')
 )
 process.TFileService = cms.Service("TFileService",
                                    fileName = cms.string("$CMSSW_BASE/src/sidm-bs/jetComponent/mydata/mcvalidation0819.root"))
