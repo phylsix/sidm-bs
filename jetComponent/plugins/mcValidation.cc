@@ -121,6 +121,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 
             zp_._eventId = eventNum_;
             zp_._pt      = p.pt();
+            zp_._eta     = p.eta();
             zp_._mass    = p.mass();
             zp_._invM    = ( p.daughter(0)->p4() + p.daughter(1)->p4() ).M();
             zp_._dR      = deltaR( *(p.daughter(0)), *(p.daughter(1)) );
@@ -185,6 +186,7 @@ sidm::mcValidation::beginJob()
 
     darkPhoton_reco_->Branch("eventId", &zp_._eventId, "eventId/I");
     darkPhoton_reco_->Branch("pt", &zp_._pt, "pt/F");
+    darkPhoton_reco_->Branch("eta", &zp_._eta, "eta/F");
     darkPhoton_reco_->Branch("mass", &zp_._mass, "mass/F");
     darkPhoton_reco_->Branch("invm", &zp_._invM, "invm/F");
     darkPhoton_reco_->Branch("pt_e", &zp_.e._pt, "pt_e/F");
