@@ -21,7 +21,7 @@
 #include "DataFormats/Candidate/interface/VertexCompositePtrCandidate.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
-#include "DataFormats/EgammaCandidates/interface/GsfElectronCore.h"
+#include "DataFormats/PatCandidates/interface/Jet.h"
 
 #include "TTree.h"
 #include "sidm-bs/jetComponent/interface/physicsObject.h"
@@ -47,7 +47,7 @@ namespace sidm {
             const edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticleTk_;
             const edm::EDGetTokenT<edm::View<reco::VertexCompositePtrCandidate> > ssVerticeTk_;
             const edm::EDGetTokenT<edm::View<pat::Electron> > patElectronTk_;
-            const edm::EDGetTokenT<edm::View<reco::GsfElectronCore> > gsfElectronCoreTk_;
+            const edm::EDGetTokenT<edm::View<pat::Jet> > patJetTk_;
             
             TTree* eventTree_;
 
@@ -68,7 +68,7 @@ namespace sidm {
             Int_t zp_N;
             Int_t ps_N;
             Int_t patE_N;
-            Int_t gsfElectronCore_N;
+            Int_t patJet_N;
 
             double zpMassSb_;
     };

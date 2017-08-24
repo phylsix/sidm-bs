@@ -16,7 +16,7 @@ sidm::mcValidation::mcValidation(const edm::ParameterSet& iConfig):
     genParticleTk_(consumes<edm::View<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("GenParticleTag_", edm::InputTag("prunedGenParticles")))),
     ssVerticeTk_(consumes<edm::View<reco::VertexCompositePtrCandidate> >(iConfig.getUntrackedParameter<edm::InputTag>("SsVerticeTag_", edm::InputTag("slimmedSecondaryVertices")))),
     patElectronTk_(consumes<edm::View<pat::Electron> >(iConfig.getUntrackedParameter<edm::InputTag>("PatElectronTag_", edm::InputTag("slimmedElectrons")))),
-    gsfElectronCoreTk_(consumes<edm::View<reco::GsfElectronCore> >(iConfig.getUntrackedParameter<edm::InputTag>("GsfElectronCoreTag_", edm::InputTag("reducedEgamma")))),
+    patJetTk_(consumes<edm::View<pat::Jet> >(iConfig.getUntrackedParameter<edm::InputTag>("PatJetTag_", edm::InputTag("slimmedJets")))),
     zpMassSb_(iConfig.getUntrackedParameter<double>("ZpMassSideBand"))
 {
     usesResource("TFileService");
@@ -49,8 +49,9 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
     Handle<View<pat::Electron> > patElectronHdl_;
     iEvent.getByToken(patElectronTk_, patElectronHdl_);
 
-    Handle<View<reco::GsfElectronCore> > gsfElectronCoreHdl_;
-    iEvent.getByToken(gsfElectronCoreTk_, gsfElectronCoreHdl_);
+    Handle<View<pat::Jet> > patJetHdl_;
+    iEvent.getByToken(patJetTk_, patJetHdl_);
+
 
     //--------------------
     //----GEN PARTICLE----
@@ -84,7 +85,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                          [](const auto& p){ return p.pdgId() == 35; });
 
     patE_N = patElectronHdl_->size();
-    //gsfElectronCore_N = gsfElectronCoreHdl_->size();
+    patJet_N = patJetHdl_->size();
 
     eventTree_->Fill();
 
@@ -256,7 +257,7 @@ sidm::mcValidation::beginJob()
     eventTree_->Branch("numberOfZps", &zp_N, "numberOfZps/I");
     eventTree_->Branch("numberOfPs", &ps_N, "numberOfPs/I");
     eventTree_->Branch("numberOfPatElectrons", &patE_N, "numberOfPatElectrons/I");
-    eventTree_->Branch("numberOfGsfElectronCore", &gsfElectronCore_N, "numberOfGsfElectronCore/I");
+    eventTree_->Branch("numberOfPatJets", &patJet_N, "numberOfPatJets/I");
 
     darkPhoton_reco_ = fs_->make<TTree>("darkPhoton_reco", "gen darkPhotons");
 

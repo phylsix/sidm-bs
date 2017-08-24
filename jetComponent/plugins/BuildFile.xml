@@ -8,5 +8,4 @@
 <use name="DataFormats/HepMCCandidate"/>
 <use name="DataFormats/Math"/>
 <use name="DataFormats/PatCandidates"/>
-<use name="DataFormats/EgammaCandidates"/>
 <flags EDM_PLUGIN="1"/>
