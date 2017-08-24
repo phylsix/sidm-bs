@@ -23,3 +23,7 @@ Output
 - Content: several plots for validating signal sample
 
 [Output](http://home.fnal.gov/~wsi/public/mcValidation0819.pdf)
+
+## numOfElectronsJets.py
+
+[Output](http://home.fnal.gov/~wsi/public/numOfJetE0822.pdf)
