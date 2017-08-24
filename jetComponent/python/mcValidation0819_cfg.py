@@ -35,7 +35,8 @@ process.mcValidation = cms.EDAnalyzer('sidm::mcValidation',
 
                                       GenParticleTag_ = cms.untracked.InputTag('prunedGenParticles'),
                                       SsVerticeTag_ = cms.untracked.InputTag('slimmedSecondaryVertices'),
-                                      PatElectronTag_ = cms.untracked.InputTag('slimmedElectrons')
+                                      PatElectronTag_ = cms.untracked.InputTag('slimmedElectrons'),
+                                      GsfElectronCoreTag_ = cms.untracked.Inputtag('reducedEgamma')
 )
 process.TFileService = cms.Service("TFileService",
                                    fileName = cms.string("$CMSSW_BASE/src/sidm-bs/jetComponent/mydata/mcvalidation0819.root"))
