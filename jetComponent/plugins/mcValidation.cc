@@ -14,7 +14,9 @@
 
 sidm::mcValidation::mcValidation(const edm::ParameterSet& iConfig):
     genParticleTk_(consumes<edm::View<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("GenParticleTag_", edm::InputTag("prunedGenParticles")))),
-    ssVerticeTk_(consumes<edm::View<reco::VertexCompositePtrCandidate> >(iConfig.getUntrackedParameter<edm::InputTag>("SsVerticeTag_", edm::InputTag("slimmedSecondaryVertices"))))
+    ssVerticeTk_(consumes<edm::View<reco::VertexCompositePtrCandidate> >(iConfig.getUntrackedParameter<edm::InputTag>("SsVerticeTag_", edm::InputTag("slimmedSecondaryVertices")))),
+    patElectronTk_(consumes<edm::View<pat::Electron> >(iConfig.getUntrackedParameter<edm::InputTag>("PatElectronTag_", edm::InputTag("slimmedElectrons")))),
+    zpMassSb_(iConfig.getUntrackedParameter<double>("ZpMassSideBand"))
 {
     usesResource("TFileService");
     eventNum_ = 0;
@@ -37,12 +39,18 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
     using namespace edm;
     using namespace std;
 
+    Handle<View<reco::GenParticle> > genParticleHdl_;
+    iEvent.getByToken(genParticleTk_, genParticleHdl_);
+
+    Handle<View<reco::VertexCompositePtrCandidate> > ssVerticeHdl_;
+    iEvent.getByToken(ssVerticeTk_, ssVerticeHdl_);
+
+    Handle<View<pat::Electron> > patElectronHdl_;
+    iEvent.getByToken(patElectronTk_, patElectronHdl_);
 
     //--------------------
     //----GEN PARTICLE----
     //--------------------
-    Handle<View<reco::GenParticle> > genParticleHdl_;
-    iEvent.getByToken(genParticleTk_, genParticleHdl_);
 
     electron_N = std::count_if(cbegin(*genParticleHdl_),
                                cend(*genParticleHdl_),
@@ -71,9 +79,11 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                          cend(*genParticleHdl_),
                          [](const auto& p){ return p.pdgId() == 35; });
 
+    patE_N = patElectronHdl_->size();
 
     eventTree_->Fill();
 
+    vector<pair<const reco::Candidate*, const reco::Candidate*> > genZps{}; // {<e,p>, <e,p>}
     for ( const auto& p : *genParticleHdl_ ) {
         if ( abs(p.pdgId()) != 32 && 
              abs(p.pdgId()) != 35 ) {continue;} // Zp or Ps
@@ -110,6 +120,8 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                 zp_.p._pt      = p.daughter(1)->pt();
                 zp_.p._energy  = p.daughter(1)->energy();
 
+                genZps.emplace_back(make_pair(p.daughter(0), p.daughter(1)));
+
             } else {
                 // 0: positron, 1: electron
                 zp_.p._eta     = p.daughter(0)->eta();
@@ -122,6 +134,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                 zp_.e._pt      = p.daughter(1)->pt();
                 zp_.e._energy  = p.daughter(1)->energy();
 
+                genZps.emplace_back(make_pair(p.daughter(1), p.daughter(0)));
             }
 
             zp_._eventId = eventNum_;
@@ -171,11 +184,54 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
     //--------------------
     //----slimmedSecondaryVertices----
     //--------------------
-    Handle<View<reco::VertexCompositePtrCandidate> > ssVerticeHdl_;
-    iEvent.getByToken(ssVerticeTk_, ssVerticeHdl_);
 
+    /*--
     cout << "[" << eventNum_ << "] "
          << "Num.Of.SecondaryVertices: " << ssVerticeHdl_->size() << endl;
+    --*/
+
+
+    //--------------------
+    //----GEN MATCHING----
+    //--------------------
+
+    vector<pat::Electron> patEp_es;
+    vector<pat::Electron> patEp_ps;
+    copy_if(patElectronHdl_->begin(), patElectronHdl_->end(), back_inserter(patEp_es), [](const pat::Electron p){return p.charge()<0;});
+    copy_if(patElectronHdl_->begin(), patElectronHdl_->end(), back_inserter(patEp_ps), [](const pat::Electron p){return p.charge()>0;});
+    //assert(patEp_es.size()>0 && patEp_ps.size()>0);
+    if (patEp_es.size()>=2 && patEp_ps.size()>=2) {
+        for (auto& p : genZps) {
+            // sort by dR separately for electrons & positrons, from large to small 
+            sort(begin(patEp_es), end(patEp_es), [p](const pat::Electron& lhs, const pat::Electron& rhs){return deltaR(lhs, *p.first) > deltaR(rhs, *p.first);});
+            sort(begin(patEp_ps), end(patEp_ps), [p](const pat::Electron& lhs, const pat::Electron& rhs){return deltaR(lhs, *p.second) > deltaR(rhs, *p.second);});
+            
+            zp_r_._eventId  = eventNum_;
+
+            zp_r_.e._eta    = patEp_es[-1].eta();
+            zp_r_.e._phi    = patEp_es[-1].phi();
+            zp_r_.e._pt     = patEp_es[-1].pt();
+            zp_r_.e._energy = patEp_es[-1].energy();
+            zp_r_.p._eta    = patEp_ps[-1].eta();
+            zp_r_.p._phi    = patEp_ps[-1].phi();
+            zp_r_.p._pt     = patEp_ps[-1].pt();
+            zp_r_.p._energy = patEp_ps[-1].energy();
+
+            zp_r_._eta  = zp_r_.e._eta + zp_r_.p._eta;
+            zp_r_._invM = ( patEp_es[-1].p4(), patEp_ps[-1].p4() ).M();
+            zp_r_._dEta = abs( zp_r_.e._eta - zp_r_.p._eta );
+            zp_r_._dPhi = abs( zp_r_.p._phi - zp_r_.p._phi );
+            zp_r_._dR   = deltaR( patEp_es[-1], patEp_ps[-1] );
+
+            darkPhoton_rereco_->Fill();
+
+            patEp_es.pop_back();
+            patEp_ps.pop_back();
+        }
+    } else {
+        cout << "[" << eventNum_ << "] e:"
+             << patEp_es.size() << " p: " << patEp_ps.size() << endl;
+    }
 
     ++eventNum_;
 
@@ -194,6 +250,7 @@ sidm::mcValidation::beginJob()
     eventTree_->Branch("numberOfPositronsZp", &positron_from_zp_N, "numberOfPositronsZp/I");
     eventTree_->Branch("numberOfZps", &zp_N, "numberOfZps/I");
     eventTree_->Branch("numberOfPs", &ps_N, "numberOfPs/I");
+    eventTree_->Branch("numberOfPatElectrons", &patE_N, "numberOfPatElectrons/I");
 
     darkPhoton_reco_ = fs_->make<TTree>("darkPhoton_reco", "gen darkPhotons");
 
@@ -212,12 +269,26 @@ sidm::mcValidation::beginJob()
     darkPhoton_reco_->Branch("dv_z", &zp_._dv_z, "dv_z/F");
 
     pscalar_reco_ = fs_->make<TTree>("pscalar_reco", "gen pseudo-scalars");
+
     pscalar_reco_->Branch("eventId", &ps_._eventId, "eventId/I");
     pscalar_reco_->Branch("mass", &ps_._mass, "mass/F");
     pscalar_reco_->Branch("invm", &ps_._invM, "invm/F");
     pscalar_reco_->Branch("dEta", &ps_._dEta, "dEta/F");
     pscalar_reco_->Branch("dPhi", &ps_._dPhi, "dPhi/F");
     pscalar_reco_->Branch("dR", &ps_._dR, "dR/F");
+
+    darkPhoton_rereco_ = fs_->make<TTree>("darkPhoton_rereco", "reco darkPhotons");
+
+    darkPhoton_rereco_->Branch("eventId", &zp_r_._eventId, "eventId/I");
+
+    darkPhoton_rereco_->Branch("pt", &zp_r_._pt, "pt/F");
+    darkPhoton_rereco_->Branch("eta", &zp_r_._eta, "eta/F");
+    darkPhoton_rereco_->Branch("invm", &zp_r_._invM, "invm/F");
+    darkPhoton_rereco_->Branch("pt_e", &zp_r_.e._pt, "pt_e/F");
+    darkPhoton_rereco_->Branch("pt_p", &zp_r_.p._pt, "pt_p/F");
+    darkPhoton_rereco_->Branch("dR_ep", &zp_r_._dR, "dR_ep/F");
+    darkPhoton_rereco_->Branch("dEta_ep", &zp_r_._dEta, "dEta_ep/F");
+    darkPhoton_rereco_->Branch("dPhi_ep", &zp_r_._dPhi, "dPhi_ep/F");
 
 }
 
