@@ -61,6 +61,11 @@ namespace sidm {
             sidm::Ps ps_;
 
             Int_t eventNum_;
+            Int_t event2pairs_;
+            Int_t event1pair_;
+            Int_t event0pair_;
+            Int_t event2pairsEpEp_;
+
             Int_t electron_N;
             Int_t positron_N;
             Int_t electron_from_zp_N;
@@ -71,6 +76,8 @@ namespace sidm {
             Int_t patJet_N;
 
             double zpMassSb_;
+            double zpMass_;
+            double dRusb_;
     };
 
 }

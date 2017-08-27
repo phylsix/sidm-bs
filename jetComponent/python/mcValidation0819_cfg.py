@@ -5,7 +5,7 @@ process = cms.Process("mcValidation")
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.threshold = 'ERROR'
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
 process.options   = cms.untracked.PSet( SkipEvent = cms.untracked.vstring('ProductNotFound'))
 
 process.source = cms.Source("PoolSource",
@@ -26,8 +26,10 @@ process.source = cms.Source("PoolSource",
 mcValidationParams = cms.PSet(
     ### parameter set
 
-    # The mass window would be [ (1-ZpMassSideBand)*M, (1+ZpMassSideBand)*M ]
-    ZpMassSideBand = cms.untracked.double(0.1) 
+    # The mass window would be [ (1-ZpMassSideBand)*ZpMass, (1+ZpMassSideBand)*ZpMass ]
+    ZpMassSideBand = cms.untracked.double(0.1),
+    ZpMass         = cms.untracked.double(0.1),
+    dRusb          = cms.untracked.double(0.1)
 )
 
 process.mcValidation = cms.EDAnalyzer('sidm::mcValidation',
@@ -39,6 +41,6 @@ process.mcValidation = cms.EDAnalyzer('sidm::mcValidation',
                                       PatJetTag_ = cms.untracked.InputTag('slimmedJets')
 )
 process.TFileService = cms.Service("TFileService",
-                                   fileName = cms.string("$CMSSW_BASE/src/sidm-bs/jetComponent/mydata/mcvalidation0819.root"))
+                                   fileName = cms.string("$CMSSW_BASE/src/sidm-bs/jetComponent/mydata/mcvalidation0826.root"))
 
 process.p = cms.Path(process.mcValidation)

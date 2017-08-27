@@ -6,21 +6,27 @@
 #include <cmath>
 
 #include "DataFormats/Common/interface/Handle.h"
+#include "DataFormats/Common/interface/Ptr.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include "DataFormats/Math/interface/deltaR.h"
 
 #include "sidm-bs/jetComponent/interface/physicsObject.h"
 #include "sidm-bs/jetComponent/interface/mcValidation.h"
+#include "sidm-bs/jetComponent/interface/utilities.h"
 
 sidm::mcValidation::mcValidation(const edm::ParameterSet& iConfig):
     genParticleTk_(consumes<edm::View<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("GenParticleTag_", edm::InputTag("prunedGenParticles")))),
     ssVerticeTk_(consumes<edm::View<reco::VertexCompositePtrCandidate> >(iConfig.getUntrackedParameter<edm::InputTag>("SsVerticeTag_", edm::InputTag("slimmedSecondaryVertices")))),
     patElectronTk_(consumes<edm::View<pat::Electron> >(iConfig.getUntrackedParameter<edm::InputTag>("PatElectronTag_", edm::InputTag("slimmedElectrons")))),
     patJetTk_(consumes<edm::View<pat::Jet> >(iConfig.getUntrackedParameter<edm::InputTag>("PatJetTag_", edm::InputTag("slimmedJets")))),
-    zpMassSb_(iConfig.getUntrackedParameter<double>("ZpMassSideBand"))
+    zpMassSb_(iConfig.getUntrackedParameter<double>("ZpMassSideBand")),
+    zpMass_(iConfig.getUntrackedParameter<double>("ZpMass")),
+    dRusb_(iConfig.getUntrackedParameter<double>("dRusb"))
 {
     usesResource("TFileService");
     eventNum_ = 0;
+    event2pairs_ = 0;
+    event2pairsEpEp_ = 0;
 }
 
 
@@ -28,6 +34,8 @@ sidm::mcValidation::~mcValidation()
 {
 
     eventNum_ = 0;
+    //sidm::test ss(88);
+    //ss.get();
 
 }
 
@@ -89,7 +97,9 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 
     eventTree_->Fill();
 
-    vector<pair<const reco::Candidate*, const reco::Candidate*> > genZps{}; // {<e,p>, <e,p>}
+    //------------------------------------------
+    vector<sidm::Zp> genZps{};
+
     for ( const auto& p : *genParticleHdl_ ) {
         if ( abs(p.pdgId()) != 32 && 
              abs(p.pdgId()) != 35 ) {continue;} // Zp or Ps
@@ -126,7 +136,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                 zp_.p._pt      = p.daughter(1)->pt();
                 zp_.p._energy  = p.daughter(1)->energy();
 
-                genZps.emplace_back(make_pair(p.daughter(0), p.daughter(1)));
+                genZps.push_back(zp_);
 
             } else {
                 // 0: positron, 1: electron
@@ -140,7 +150,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                 zp_.e._pt      = p.daughter(1)->pt();
                 zp_.e._energy  = p.daughter(1)->energy();
 
-                genZps.emplace_back(make_pair(p.daughter(1), p.daughter(0)));
+                genZps.push_back(zp_);
             }
 
             zp_._eventId = eventNum_;
@@ -178,8 +188,8 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
             ps_._eventId = eventNum_;
             ps_._mass    = p.mass();
             ps_._invM    = ( p.daughter(0)->p4() + p.daughter(1)->p4() ).M();
-            ps_._dEta    =  std::abs( p.daughter(0)->eta() - p.daughter(1)->eta() );
-            ps_._dPhi    =  std::abs( p.daughter(0)->phi() - p.daughter(1)->phi() );
+            ps_._dEta    = std::abs( p.daughter(0)->eta() - p.daughter(1)->eta() );
+            ps_._dPhi    = std::abs( p.daughter(0)->phi() - p.daughter(1)->phi() );
             ps_._dR      = deltaR( *(p.daughter(0)), *(p.daughter(1)) );
 
             pscalar_reco_->Fill();
@@ -201,11 +211,140 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
     //----GEN MATCHING----
     //--------------------
 
-    vector<pat::Electron> patEp_es;
-    vector<pat::Electron> patEp_ps;
-    copy_if(patElectronHdl_->begin(), patElectronHdl_->end(), back_inserter(patEp_es), [](const pat::Electron p){return p.charge()<0;});
-    copy_if(patElectronHdl_->begin(), patElectronHdl_->end(), back_inserter(patEp_ps), [](const pat::Electron p){return p.charge()>0;});
+    int PAIR(-1), EPPAIR(-1), EJPAIR(-1), JJPAIR(-1);
+
+    vector<Ptr<pat::Electron> > patElectronPtr_ = patElectronHdl_->ptrs();
+    vector<Ptr<pat::Electron> > patEp_es{}, patEp_ps{};
+
+    copy_if(patElectronPtr_.begin(), patElectronPtr_.end(), back_inserter(patEp_es), [](const Ptr<pat::Electron>& p){return p->charge()<0;});
+    copy_if(patElectronPtr_.begin(), patElectronPtr_.end(), back_inserter(patEp_ps), [](const Ptr<pat::Electron>& p){return p->charge()>0;});
     //assert(patEp_es.size()>0 && patEp_ps.size()>0);
+
+    /* EP PAIR SEARCH */
+    if ( patEp_es.size()>0 && patEp_ps.size()>0 ) {
+
+        // construct pair vector
+        pairvec<pat::Electron> epPair(patEp_es, patEp_ps);
+        vector<pair<Ptr<pat::Electron>, Ptr<pat::Electron> > > epPairTmp = epPair.get();
+
+        // narrow mass sideband
+        remove_if(begin(epPairTmp), end(epPairTmp), [this](const auto& p){ 
+                float m = (p.first->p4()+p.second->p4()).M();
+                return m>=(1-zpMassSb_)*zpMass_ && m<=(1+zpMassSb_)*zpMass_;
+                });
+
+        if ( epPairTmp.size() == 0 ) {
+            PAIR   = 0;
+            EPPAIR = 0;
+        } else if (epPairTmp.size()==1) {
+            //ONLY 1 pair in mass band 
+            //--> looking at dR matched or not with one of the two dark photons.
+            vector<float> avedR{};
+            for (auto& p : genZps) {
+                std::pair<float, float> drTmp(p.dRVal(epPairTmp[0]));
+                if (drTmp.first <= dRusb_ && drTmp.second <= dRusb_)
+                    p.matched = true;
+                avedR.push_back((drTmp.first+drTmp.second)/2);
+            }
+            
+            int matchedNum = count_if(cbegin(genZps), cend(genZps), [](const sidm::Zp& p){return p.matched;});
+
+            if (matchedNum == 2) {
+               //whose average dR is smaller got matched, the other one remains as unmatched.
+               if (avedR[0] <= avedR[1])
+                   genZps[1].matched = false;
+               else
+                   genZps[0].matched = false;
+               matchedNum = 1;
+            }
+            if (matchedNum == 1) {
+                PAIR   = 1; EPPAIR = 1;
+
+                zp_r_ = sidm::Zp(epPairTmp[0]);
+                zp_r_._eventId = eventNum_;
+                darkPhoton_rereco_->Fill();
+            } else {
+                PAIR   = 0;
+                EPPAIR = 0;
+            }
+        } else if (epPairTmp.size()>1) {
+            sort(begin(epPairTmp), end(epPairTmp), [this](const auto& lhs, const auto& rhs){
+                    float lhsM = (lhs.first->p4()+lhs.second->p4()).M();
+                    float rhsM = (rhs.first->p4()+rhs.second->p4()).M();
+                    return std::abs(lhsM-zpMass_) < std::abs(rhsM-zpMass_);
+                    });
+            pairvec<pat::Electron> epPair(epPairTmp, true);
+            epPairTmp.clear();
+            epPairTmp = epPair.get_zip();
+
+            if (epPairTmp.size() == 1) {
+                //ONLY 1 unique pair, esscencially the same way as we deal with 1 pair
+                vector<float> avedR{};
+                for (auto& p : genZps) {
+                    std::pair<float, float> drTmp(p.dRVal(epPairTmp[0]));
+                    if (drTmp.first <= dRusb_ && drTmp.second <= dRusb_)
+                        p.matched = true;
+                    avedR.push_back((drTmp.first+drTmp.second)/2);
+                }
+
+                int matchedNum = count_if(cbegin(genZps), cend(genZps), [](const sidm::Zp& p){return p.matched;});
+
+                if (matchedNum == 2) {
+                    //whose average dR is larger got matched, the other one remains as unmatched.
+                    if (avedR[0] <= avedR[1])
+                        genZps[1].matched = false;
+                    else
+                        genZps[0].matched = false;
+                    matchedNum = 1;
+                }
+
+                if (matchedNum == 1) {
+                    PAIR = 1; EPPAIR = 1;
+                    zp_r_ = sidm::Zp(epPairTmp[0]);
+                    zp_r_._eventId = eventNum_;
+                    darkPhoton_rereco_->Fill();
+                } else { PAIR = 0; EPPAIR = 0; }
+
+            } else {
+                //More than 1 unique pair in mass band-
+                for (const auto& q : epPairTmp) {
+                    if (genZps[0].matched && genZps[1].matched) break;
+                    std::pair<float, float> drTmp0(genZps[0].dRVal(q));
+                    std::pair<float, float> drTmp1(genZps[1].dRVal(q));
+                    if (!genZps[0].matched && drTmp0.first <= dRusb_ && drTmp0.second <= dRusb_) {
+                        genZps[0].matched = true;
+                        zp_r_ = sidm::Zp(q);
+                        zp_r_._eventId = eventNum_;
+                        darkPhoton_rereco_->Fill();
+                        continue;
+                    }
+                    if (!genZps[1].matched && drTmp1.first <= dRusb_ && drTmp1.second <= dRusb_) {
+                        genZps[1].matched = true;
+                        zp_r_ = sidm::Zp(q);
+                        zp_r_._eventId = eventNum_;
+                        darkPhoton_rereco_->Fill();
+                    }
+                }
+
+                int matchedNum = count_if(cbegin(genZps), cend(genZps), [](const sidm::Zp& p){return p.matched;});
+                if (matchedNum == 2) {
+                    PAIR = 2;
+                    EPPAIR = 2;
+                    ++event2pairs_;
+                    ++event2pairsEpEp_;
+                }
+                else if (matchedNum == 1) { PAIR = 1; EPPAIR = 1; }
+                else if (matchedNum == 0) { PAIR = 0; EPPAIR = 0; }
+                
+            }
+        }
+            
+    } else if ( patEp_es.size() >0 || patEp_ps.size()>0 ) {
+    
+    } else {
+    
+    }
+    /*--
     if (patEp_es.size()>=2 && patEp_ps.size()>=2) {
         for (auto& p : genZps) {
             // sort by dR separately for electrons & positrons, from large to small 
@@ -233,13 +372,18 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 
             patEp_es.pop_back();
             patEp_ps.pop_back();
+
+            cout << "[" << eventNum_ << "] invm:"
+                 << zp_r_._invM << endl;
         }
     } else {
-        cout << "[" << eventNum_ << "] e:"
-             << patEp_es.size() << " p: " << patEp_ps.size() << endl;
+        //cout << "[" << eventNum_ << "] e:"
+        //     << patEp_es.size() << " p: " << patEp_ps.size() << endl;
     }
+    --*/
 
     ++eventNum_;
+    cout << PAIR << EPPAIR << EJPAIR << JJPAIR <<endl;
 
 }
 
