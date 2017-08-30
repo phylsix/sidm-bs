@@ -27,7 +27,9 @@ mcValidationParams = cms.PSet(
     ### parameter set
 
     # The mass window would be [ (1-ZpMassSideBand)*M, (1+ZpMassSideBand)*M ]
-    ZpMassSideBand = cms.untracked.double(0.1) 
+    ZpMassSideBand = cms.untracked.double(0.1), 
+    ZpMass         = cms.untracked.double(0.1),
+    dRusb          = cms.untracked.double(0.1)
 )
 
 process.mcValidation = cms.EDAnalyzer('sidm::mcValidation',

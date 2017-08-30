@@ -5,7 +5,7 @@ process = cms.Process("mcValidation")
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.threshold = 'ERROR'
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 process.options   = cms.untracked.PSet( SkipEvent = cms.untracked.vstring('ProductNotFound'))
 
 process.source = cms.Source("PoolSource",
@@ -27,7 +27,7 @@ mcValidationParams = cms.PSet(
     ### parameter set
 
     # The mass window would be [ (1-ZpMassSideBand)*ZpMass, (1+ZpMassSideBand)*ZpMass ]
-    ZpMassSideBand = cms.untracked.double(0.1),
+    ZpMassSideBand = cms.untracked.double(1.),
     ZpMass         = cms.untracked.double(0.1),
     dRusb          = cms.untracked.double(0.1)
 )
