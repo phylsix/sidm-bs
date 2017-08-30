@@ -3,9 +3,11 @@
 
 #include <vector>
 #include <utility>
+#include <algorithm>
 
 #include "DataFormats/Common/interface/Ptr.h"
-#include "DataFormats/PatCandidates/interface/Electron.h"
+//#include "DataFormats/PatCandidates/interface/Electron.h"
+#include "DataFormats/Candidate/interface/Candidate.h"
 
 #include "sidm-bs/jetComponent/interface/physicsObject.h"
 
@@ -81,9 +83,16 @@ namespace sidm {
         std::vector<edm::Ptr<U> > _b;
     };
 
-    void match_patPair_with_zps (const std::pair<edm::Ptr<pat::Electron>, edm::Ptr<pat::Electron> >& undertest,
+    void match_patPair_with_zps (const std::pair<edm::Ptr<reco::Candidate>, edm::Ptr<reco::Candidate> >& undertest,
                                  std::vector<sidm::Zp>& zps,
                                  double deltaR_upsideband);
+
+    template<class T>
+    void remove_from_collection (std::vector<T>* collection, const T& val) {
+        auto to_be_removed = std::find(collection->begin(), collection->end(), val);
+        if (to_be_removed != collection->end())
+            collection->erase(to_be_removed);
+    }
 }
 
 #endif

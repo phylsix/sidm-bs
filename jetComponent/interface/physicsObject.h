@@ -36,7 +36,7 @@ namespace sidm {
     public:
         Ep(){}
         Ep(const Ep& ep_){}
-        Ep(const edm::Ptr<pat::Electron>& pate) {
+        Ep(const edm::Ptr<reco::Candidate>& pate) {
             _pt     = pate->pt();
             _eta    = pate->eta();
             _phi    = pate->phi();
@@ -59,7 +59,7 @@ namespace sidm {
             _dPhi = std::abs(e._phi - p._phi);
             _dR   = std::sqrt(_dEta*_dEta + _dPhi*_dPhi);
         }
-        Zp(const std::pair<edm::Ptr<pat::Electron>, edm::Ptr<pat::Electron> >& q) {
+        Zp(const std::pair<edm::Ptr<reco::Candidate>, edm::Ptr<reco::Candidate> >& q) {
             e = sidm::Ep(q.first);
             p = sidm::Ep(q.second);
             _dEta = std::abs(e._eta - p._eta);

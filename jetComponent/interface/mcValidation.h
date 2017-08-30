@@ -65,6 +65,8 @@ namespace sidm {
             Int_t event1pair_;
             Int_t event0pair_;
             Int_t event2pairsEpEp_;
+            Int_t event2pairsEpEj_;
+            Int_t event2pairsEjEj_;
 
             Int_t electron_N;
             Int_t positron_N;
