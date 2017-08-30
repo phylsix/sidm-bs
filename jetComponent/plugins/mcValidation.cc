@@ -65,39 +65,48 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
     //----GEN PARTICLE----
     //--------------------
 
-    electron_N = std::count_if(cbegin(*genParticleHdl_),
-                               cend(*genParticleHdl_),
+    // Number of electrons in genParticle collection: 
+    // 1. final states electron. 2. pt > 2GeV.
+    electron_N = std::count_if(cbegin(*genParticleHdl_), cend(*genParticleHdl_),
                                [](const auto& p){ return p.pdgId() == 11 && 
                                                          p.status() == 1 &&
                                                          p.pt() > 2. ; });
-    electron_from_zp_N = std::count_if(cbegin(*genParticleHdl_),
-                                       cend(*genParticleHdl_),
+
+    // Number of electrons whose mother is dark photon in genParticle collection.
+    electron_from_zp_N = std::count_if(cbegin(*genParticleHdl_),cend(*genParticleHdl_),
                                        [](const auto& p){ return p.pdgId() == 11 &&
                                                                  p.mother()->pdgId() == 32; });
 
-    positron_N = std::count_if(cbegin(*genParticleHdl_),
-                               cend(*genParticleHdl_),
+    // Number of positrons in genParticle collection:
+    // 1. final states positron. 2. pt > 2GeV.
+    positron_N = std::count_if(cbegin(*genParticleHdl_), cend(*genParticleHdl_),
                                [](const auto& p){ return p.pdgId() == -11 &&
                                                          p.status() == 1  &&
                                                          p.pt() > 2. ; });
-    positron_from_zp_N = std::count_if(cbegin(*genParticleHdl_),
-                                       cend(*genParticleHdl_),
+
+    // Number of positrons whose mother is dark photon in genParticle collection.
+    positron_from_zp_N = std::count_if(cbegin(*genParticleHdl_), cend(*genParticleHdl_),
                                        [](const auto& p){ return p.pdgId() == -11 &&
                                                                  p.mother()->pdgId() == 32; });
 
-    zp_N = std::count_if(cbegin(*genParticleHdl_),
-                         cend(*genParticleHdl_),
+    // Number of dark photons in genParticle collection.
+    zp_N = std::count_if(cbegin(*genParticleHdl_), cend(*genParticleHdl_),
                          [](const auto& p){ return p.pdgId() == 32; });
-    ps_N = std::count_if(cbegin(*genParticleHdl_),
-                         cend(*genParticleHdl_),
+
+    // Number of pseudoscalar in genParticle collection.
+    ps_N = std::count_if(cbegin(*genParticleHdl_), cend(*genParticleHdl_),
                          [](const auto& p){ return p.pdgId() == 35; });
 
+    // Number of electrons in pat::Electron collection.
     patE_N = patElectronHdl_->size();
+
+    // Number of jets in pat::Jet collection.
     patJet_N = patJetHdl_->size();
 
     eventTree_->Fill();
 
     //------------------------------------------
+    // Store dark photon object for future matching.
     vector<sidm::Zp> genZps{};
 
     for ( const auto& p : *genParticleHdl_ ) {
@@ -114,42 +123,22 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                 continue;
             }
 
-            if ( p.daughter(0)->pdgId() *
-                    p.daughter(1)->pdgId() != -11*11 ) {
+            if ( p.daughter(0)->pdgId() * p.daughter(1)->pdgId() != -11*11 ) {
                 cout << "[" << eventNum_ << "] "
                      << "Found a darkphoton whose daughters are not electron pair" << endl;
                 cout << "--> Instead (" << p.daughter(0)->pdgId() << ", "
                                         << p.daughter(1)->pdgId() << ")" <<endl;
-
                 continue;
             }
 
             if ( p.daughter(0)->pdgId() == 11 ) {
                 // 0: electron, 1: positron
-                zp_.e._eta     = p.daughter(0)->eta();
-                zp_.e._phi     = p.daughter(0)->phi();
-                zp_.e._pt      = p.daughter(0)->pt();
-                zp_.e._energy  = p.daughter(0)->energy();
-
-                zp_.p._eta     = p.daughter(1)->eta();
-                zp_.p._phi     = p.daughter(1)->phi();
-                zp_.p._pt      = p.daughter(1)->pt();
-                zp_.p._energy  = p.daughter(1)->energy();
-
+                zp_ = sidm::Zp(p.daughter(0), p.daughter(1));
                 genZps.push_back(zp_);
 
             } else {
                 // 0: positron, 1: electron
-                zp_.p._eta     = p.daughter(0)->eta();
-                zp_.p._phi     = p.daughter(0)->phi();
-                zp_.p._pt      = p.daughter(0)->pt();
-                zp_.p._energy  = p.daughter(0)->energy();
-
-                zp_.e._eta     = p.daughter(1)->eta();
-                zp_.e._phi     = p.daughter(1)->phi();
-                zp_.e._pt      = p.daughter(1)->pt();
-                zp_.e._energy  = p.daughter(1)->energy();
-
+                zp_ = sidm::Zp(p.daughter(1), p.daughter(0));
                 genZps.push_back(zp_);
             }
 
@@ -157,13 +146,6 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
             zp_._pt      = p.pt();
             zp_._eta     = p.eta();
             zp_._mass    = p.mass();
-            zp_._invM    = ( p.daughter(0)->p4() + p.daughter(1)->p4() ).M();
-            zp_._dR      = deltaR( *(p.daughter(0)), *(p.daughter(1)) );
-            zp_._dEta    = std::abs( p.daughter(0)->eta() - p.daughter(1)->eta() );
-            zp_._dPhi    = std::abs( p.daughter(0)->phi() - p.daughter(1)->phi() );
-            zp_._dv_x    = p.daughter(0)->vx();
-            zp_._dv_y    = p.daughter(0)->vy();
-            zp_._dv_z    = p.daughter(0)->vz();
 
             darkPhoton_reco_->Fill(); 
 
@@ -176,8 +158,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                 continue;
             }
 
-            if ( p.daughter(0)->pdgId() *
-                 p.daughter(1)->pdgId() != 32*32 ) {
+            if ( p.daughter(0)->pdgId() * p.daughter(1)->pdgId() != 32*32 ) {
                 cout << "[" << eventNum_ << "] "
                      << "Found a pscalar whose daughters are not dark photons," <<endl;
                 cout << "--> Instead (" << p.daughter(0)->pdgId() << ", "
@@ -211,18 +192,23 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
     //----GEN MATCHING----
     //--------------------
 
-    int PAIR(-1), EPPAIR(-1), EJPAIR(-1), JJPAIR(-1);
+    
+    int PAIR(-1);                            // Number of reconstructed pairs.
+    int EPPAIR(-1), EJPAIR(-1), JJPAIR(-1);  // Categorize them
 
-    vector<Ptr<pat::Electron> > patElectronPtr_ = patElectronHdl_->ptrs();
-    vector<Ptr<pat::Electron> > patEp_es{}, patEp_ps{};
+    
+    vector<Ptr<pat::Electron> > patElectronPtr_ = patElectronHdl_->ptrs();  // edm::Ptr can be used to compair and find.
+    vector<Ptr<pat::Electron> > patEp_es{}, patEp_ps{};                     // store electron ptrs & positron ptrs separately.
 
-    copy_if(patElectronPtr_.begin(), patElectronPtr_.end(), back_inserter(patEp_es), [](const Ptr<pat::Electron>& p){return p->charge()<0;});
-    copy_if(patElectronPtr_.begin(), patElectronPtr_.end(), back_inserter(patEp_ps), [](const Ptr<pat::Electron>& p){return p->charge()>0;});
+    copy_if(patElectronPtr_.begin(), patElectronPtr_.end(), back_inserter(patEp_es),
+            [](const Ptr<pat::Electron>& p){return p->charge()<0;});
+    copy_if(patElectronPtr_.begin(), patElectronPtr_.end(), back_inserter(patEp_ps),
+            [](const Ptr<pat::Electron>& p){return p->charge()>0;});
     //assert(patEp_es.size()>0 && patEp_ps.size()>0);
 
     /* EP PAIR SEARCH */
     if ( patEp_es.size()>0 && patEp_ps.size()>0 ) {
-
+        // At least a positron and an electrons are reconstructed
         // construct pair vector
         pairvec<pat::Electron> epPair(patEp_es, patEp_ps);
         vector<pair<Ptr<pat::Electron>, Ptr<pat::Electron> > > epPairTmp = epPair.get();
@@ -234,30 +220,15 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                 });
 
         if ( epPairTmp.size() == 0 ) {
+            // no pairs in mass band..
             PAIR   = 0;
             EPPAIR = 0;
         } else if (epPairTmp.size()==1) {
-            //ONLY 1 pair in mass band 
-            //--> looking at dR matched or not with one of the two dark photons.
-            vector<float> avedR{};
-            for (auto& p : genZps) {
-                std::pair<float, float> drTmp(p.dRVal(epPairTmp[0]));
-                if (drTmp.first <= dRusb_ && drTmp.second <= dRusb_)
-                    p.matched = true;
-                avedR.push_back((drTmp.first+drTmp.second)/2);
-            }
+            // ONLY 1 pair in mass band 
+            // --> looking at dR matched or not with one of the two dark photons.
+            sidm::match_patPair_with_zps(epPairTmp[0], genZps, dRusb_); //< 1. pat::Electron pair 2. gen dark photon vector. 3. dR limit
             
-            int matchedNum = count_if(cbegin(genZps), cend(genZps), [](const sidm::Zp& p){return p.matched;});
-
-            if (matchedNum == 2) {
-               //whose average dR is smaller got matched, the other one remains as unmatched.
-               if (avedR[0] <= avedR[1])
-                   genZps[1].matched = false;
-               else
-                   genZps[0].matched = false;
-               matchedNum = 1;
-            }
-            if (matchedNum == 1) {
+            if (count_if(cbegin(genZps), cend(genZps), [](const sidm::Zp& p){return p.matched;})) {
                 PAIR   = 1; EPPAIR = 1;
 
                 zp_r_ = sidm::Zp(epPairTmp[0]);
@@ -278,58 +249,42 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
             epPairTmp = epPair.get_zip();
 
             if (epPairTmp.size() == 1) {
-                //ONLY 1 unique pair, esscencially the same way as we deal with 1 pair
-                vector<float> avedR{};
-                for (auto& p : genZps) {
-                    std::pair<float, float> drTmp(p.dRVal(epPairTmp[0]));
-                    if (drTmp.first <= dRusb_ && drTmp.second <= dRusb_)
-                        p.matched = true;
-                    avedR.push_back((drTmp.first+drTmp.second)/2);
-                }
+                /// ONLY 1 unique pair, esscencially the same way as we deal with 1 pair
+                sidm::match_patPair_with_zps(epPairTmp[0], genZps, dRusb_); //< 1. pat::Electron pair 2. gen dark photon vector. 3. dR limit
 
-                int matchedNum = count_if(cbegin(genZps), cend(genZps), [](const sidm::Zp& p){return p.matched;});
-
-                if (matchedNum == 2) {
-                    //whose average dR is larger got matched, the other one remains as unmatched.
-                    if (avedR[0] <= avedR[1])
-                        genZps[1].matched = false;
-                    else
-                        genZps[0].matched = false;
-                    matchedNum = 1;
-                }
-
-                if (matchedNum == 1) {
+                if (count_if(cbegin(genZps), cend(genZps), [](const sidm::Zp& p){return p.matched;})) {
                     PAIR = 1; EPPAIR = 1;
                     zp_r_ = sidm::Zp(epPairTmp[0]);
                     zp_r_._eventId = eventNum_;
                     darkPhoton_rereco_->Fill();
                 } else { PAIR = 0; EPPAIR = 0; }
-
             } else {
-                //More than 1 unique pair in mass band-
+                /// More than 1 unique pair in mass band.
+                /// Keep record which zp has already been matched, skip if true
+                bool first_genZp_matched(false);
+                bool second_genZp_matched(false);
                 for (const auto& q : epPairTmp) {
-                    if (genZps[0].matched && genZps[1].matched) break;
-                    std::pair<float, float> drTmp0(genZps[0].dRVal(q));
-                    std::pair<float, float> drTmp1(genZps[1].dRVal(q));
-                    if (!genZps[0].matched && drTmp0.first <= dRusb_ && drTmp0.second <= dRusb_) {
-                        genZps[0].matched = true;
-                        zp_r_ = sidm::Zp(q);
-                        zp_r_._eventId = eventNum_;
-                        darkPhoton_rereco_->Fill();
-                        continue;
-                    }
-                    if (!genZps[1].matched && drTmp1.first <= dRusb_ && drTmp1.second <= dRusb_) {
-                        genZps[1].matched = true;
+                    sidm::match_patPair_with_zps(q, genZps, dRusb_);
+                    if (!first_genZp_matched && genZps[0].matched) {
+                        first_genZp_matched = true;
                         zp_r_ = sidm::Zp(q);
                         zp_r_._eventId = eventNum_;
                         darkPhoton_rereco_->Fill();
                     }
+                    if (!second_genZp_matched && genZps[1].matched) {
+                        second_genZp_matched = true;
+                        zp_r_ = sidm::Zp(q);
+                        zp_r_._eventId = eventNum_;
+                        darkPhoton_rereco_->Fill();
+                    }
+                    /// If both matched, skip the rest.
+                    if (first_genZp_matched && second_genZp_matched) break;
                 }
 
-                int matchedNum = count_if(cbegin(genZps), cend(genZps), [](const sidm::Zp& p){return p.matched;});
+                int matchedNum = static_cast<int>(first_genZp_matched) + static_cast<int>(second_genZp_matched);
                 if (matchedNum == 2) {
-                    PAIR = 2;
-                    EPPAIR = 2;
+                    PAIR = 2;           //< 2 Pairs are reconstructed.
+                    EPPAIR = 2;         //< Both are electron-positron pairs.
                     ++event2pairs_;
                     ++event2pairsEpEp_;
                 }

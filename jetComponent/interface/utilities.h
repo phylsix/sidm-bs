@@ -5,6 +5,9 @@
 #include <utility>
 
 #include "DataFormats/Common/interface/Ptr.h"
+#include "DataFormats/PatCandidates/interface/Electron.h"
+
+#include "sidm-bs/jetComponent/interface/physicsObject.h"
 
 namespace sidm {
 
@@ -20,17 +23,14 @@ namespace sidm {
     };
     
     template<class T, class U=T> class pairvec {
-
     using pv = std::vector<std::pair<edm::Ptr<T>, edm::Ptr<U> > >;
-
     public:
         pairvec(std::vector<edm::Ptr<T> >& a,
                 std::vector<edm::Ptr<U> >& b) :
             _a(a), _b(b) {};
 
 
-        pairvec(pv& vp, bool unique=false) {
-
+        pairvec(const pv& vp, bool unique=false) {
             for (const auto& p : vp) {
                 if (!unique){
                     _a.push_back(p.first);
@@ -51,7 +51,6 @@ namespace sidm {
 
         // return a vector whose size = _a.size()*_b.size()
         pv get() const {
-
             pv tmp{};
             for (const auto& p : _a) {
                 for (const auto& q : _b) {
@@ -59,14 +58,12 @@ namespace sidm {
                 }
             }
             return tmp;
-
         }
 
 
         // zip pairs, requires _a.size() == _b.size().
         // e.g.[(_a[0], _b[0]),(_a[1], _b[1]),...]
         pv get_zip() const {
-
             assert(_a.size() == _b.size());
             pv tmp{};
             typename std::vector<edm::Ptr<T> >::const_iterator ai;
@@ -76,15 +73,17 @@ namespace sidm {
                     ++ai, ++bi) {
                 tmp.emplace_back(std::make_pair(*ai, *bi));
             }
-
             return tmp;
-
         }
 
     private:
         std::vector<edm::Ptr<T> > _a;
         std::vector<edm::Ptr<U> > _b;
     };
+
+    void match_patPair_with_zps (const std::pair<edm::Ptr<pat::Electron>, edm::Ptr<pat::Electron> >& undertest,
+                                 std::vector<sidm::Zp>& zps,
+                                 double deltaR_upsideband);
 }
 
 #endif
