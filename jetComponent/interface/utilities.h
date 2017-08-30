@@ -25,8 +25,8 @@ namespace sidm {
     template<class T, class U=T> class pairvec {
     using pv = std::vector<std::pair<edm::Ptr<T>, edm::Ptr<U> > >;
     public:
-        pairvec(std::vector<edm::Ptr<T> >& a,
-                std::vector<edm::Ptr<U> >& b) :
+        pairvec(const std::vector<edm::Ptr<T> >& a,
+                const std::vector<edm::Ptr<U> >& b) :
             _a(a), _b(b) {};
 
 
