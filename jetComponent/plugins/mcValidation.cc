@@ -43,9 +43,21 @@ sidm::mcValidation::mcValidation(const edm::ParameterSet& iConfig):
 sidm::mcValidation::~mcValidation()
 {
 
+    std::cout << "\n\nNumber of events: " << eventNum_ << "\n\n";
+    std::cout << std::setprecision(4) << std::fixed;
+    std::cout << "2 pairs events: " << event2pairs_ << " [" << float(event2pairs_)/eventNum_ << "]\n";
+    std::cout << "\tEpEp: " << event2pairsEpEp_ << " [" << float(event2pairsEpEp_)/event2pairs_ << "][" << float(event2pairsEpEp_)/eventNum_ <<"]\n";
+    std::cout << "\tEpEj: " << event2pairsEpEj_ << " [" << float(event2pairsEpEj_)/event2pairs_ << "][" << float(event2pairsEpEj_)/eventNum_ <<"]\n";
+    std::cout << "\tEjEj: " << event2pairsEjEj_ << " [" << float(event2pairsEjEj_)/event2pairs_ << "][" << float(event2pairsEjEj_)/eventNum_ <<"]\n";
+    std::cout << "\tEpJj: " << event2pairsEpJj_ << " [" << float(event2pairsEpJj_)/event2pairs_ << "][" << float(event2pairsEpJj_)/eventNum_ <<"]\n";
+    std::cout << "\tEjJj: " << event2pairsEjJj_ << " [" << float(event2pairsEjJj_)/event2pairs_ << "][" << float(event2pairsEjJj_)/eventNum_ <<"]\n";
+    std::cout << "\tJjJj: " << event2pairsJjJj_ << " [" << float(event2pairsJjJj_)/event2pairs_ << "][" << float(event2pairsJjJj_)/eventNum_ <<"]\n";
+    std::cout << "1 pair events: " << event1pair_ << " [" << float(event1pair_)/eventNum_ << "]\n";
+    std::cout << "\tEp: " << event1pairEp_ << " [" << float(event1pairEp_)/event1pair_ << "][" << float(event1pairEp_)/eventNum_ <<"]\n";
+    std::cout << "\tEj: " << event1pairEj_ << " [" << float(event1pairEj_)/event1pair_ << "][" << float(event1pairEj_)/eventNum_ <<"]\n";
+    std::cout << "\tEp: " << event1pairJj_ << " [" << float(event1pairJj_)/event1pair_ << "][" << float(event1pairJj_)/eventNum_ <<"]\n";
+    std::cout << "0 pair events: " << event0pair_ << " [" << float(event0pair_)/eventNum_ << "]\n";
     eventNum_ = 0;
-    //sidm::test ss(88);
-    //ss.get();
 
 }
 
@@ -227,7 +239,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
         // narrow mass sideband
         epPairTmp.erase(remove_if(begin(epPairTmp), end(epPairTmp), [this](const auto& p){ 
                     float m = (p.first->p4()+p.second->p4()).M();
-                    return m>=(1-zpMassSb_)*zpMass_ && m<=(1+zpMassSb_)*zpMass_;
+                    return m<(1-zpMassSb_)*zpMass_ || m>(1+zpMassSb_)*zpMass_;
                     }), epPairTmp.end());
 
         if ( epPairTmp.size() == 0 ) {
@@ -307,6 +319,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                 if (matchedNum == 2) {
                     PAIR = 2;           //< 2 Pairs are reconstructed.
                     EPPAIR = 2;         //< Both are electron-positron pairs.
+                    EJPAIR = JJPAIR = 0;
                     ++event2pairs_;
                     ++event2pairsEpEp_;
                 }
@@ -338,7 +351,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
         // narrow mass sideband
         ejPairTmp.erase(remove_if(begin(ejPairTmp), end(ejPairTmp), [this](const auto& p) {
                     float m = (p.first->p4()+p.second->p4()).M();
-                    return m>=(1-zpMassSb_)*zpMass_ && m<=(1+zpMassSb_)*zpMass_;
+                    return m<(1-zpMassSb_)*zpMass_ || m>(1+zpMassSb_)*zpMass_;
                     }), ejPairTmp.end());
         if (ejPairTmp.size() == 0) {
             // No pairs in mass band..
@@ -370,6 +383,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 
                         PAIR = 2;            //< 2 pairs are reconstructed.
                         EJPAIR = 1;          //< 1 pair is electron-jet.
+                        JJPAIR = 0;
                         ++event2pairs_;
                         ++event2pairsEpEj_;
                     }
@@ -406,6 +420,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                 if (matched_now == 2) {
                     PAIR   = 2;          //< 2 Pairs are reconstructed.
                     EJPAIR = 2;          //< Both are electron-jet pairs.
+                    JJPAIR = 0;
                     ++event2pairs_;
                     ++event2pairsEjEj_;
                 }
@@ -420,18 +435,19 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
      * __JJ PAIR SEARCH__
      */
     if (PAIR<2) {
-        //sidm::pairvec<pat::Jet> jjPair(patJetPtr_, patJetPtr_);
         vector<pair<Ptr<pat::Jet>, Ptr<pat::Jet> > > jjPairTmp{};
-        for (auto it = cbegin(patJetPtr_); it != cend(patJetPtr_)-1; ++it) {
-            for(auto jt = cbegin(patJetPtr_)+1; jt != cend(patJetPtr_); ++jt) {
-                jjPairTmp.emplace_back(std::make_pair(*it, *jt));
+        if (patJetPtr_.size() > 1) {  //< it does not make sense if there are less than 2 patJets.
+            for (auto it = cbegin(patJetPtr_); it != cend(patJetPtr_)-1; ++it) {
+                for(auto jt = cbegin(patJetPtr_)+1; jt != cend(patJetPtr_); ++jt) {
+                    jjPairTmp.emplace_back(std::make_pair(*it, *jt));
+                }
             }
         }
 
         // Narrow mass sideband
         jjPairTmp.erase(remove_if(begin(jjPairTmp), end(jjPairTmp), [this](const auto& p){
                     float m = (p.first->p4()+p.second->p4()).M();
-                    return m>=(1-zpMassSb_)*zpMass_ && m<=(1+zpMassSb_)*zpMass_;
+                    return m<(1-zpMassSb_)*zpMass_ || m>(1+zpMassSb_)*zpMass_;
                     }), jjPairTmp.end());
         
         if (jjPairTmp.size()==0) {
@@ -527,8 +543,10 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
     
     assert(PAIR == EPPAIR + EJPAIR + JJPAIR);
 
-    ++eventNum_;
+    //cout << "[" << eventNum_ << "] "
+    //     << "Num.Pair: "<< PAIR << ", EP: " << EPPAIR << ", EJ: " << EJPAIR << ", JJ: " << JJPAIR <<endl;
 
+    ++eventNum_;
 }
 
 

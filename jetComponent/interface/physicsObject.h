@@ -65,6 +65,9 @@ namespace sidm {
             _dEta = std::abs(e._eta - p._eta);
             _dPhi = std::abs(e._phi - p._phi);
             _dR   = std::sqrt(_dEta*_dEta + _dPhi*_dPhi);
+            _invM = (q.first->p4() + q.second->p4()).M();
+            _eta  = e._eta + p._eta;
+            _pt   = e._pt + p._pt;
         }
         Zp(const reco::Candidate* gene, const reco::Candidate* genp) {
             e = sidm::Ep(gene);
@@ -73,6 +76,8 @@ namespace sidm {
             _dPhi = std::abs(gene->phi() - genp->phi());
             _dR   = std::sqrt(_dEta*_dEta + _dPhi*_dPhi);
             _invM = (gene->p4() + genp->p4()).M();
+            _eta  = e._eta + p._eta;
+            _pt   = e._pt + p._pt;
             _dv_x = gene->vx();
             _dv_y = gene->vy();
             _dv_z = gene->vz();

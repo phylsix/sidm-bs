@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include "DataFormats/Common/interface/Ptr.h"
-//#include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/Candidate/interface/Candidate.h"
 
 #include "sidm-bs/jetComponent/interface/physicsObject.h"
