@@ -29,6 +29,14 @@ sidm::mcValidation::mcValidation(const edm::ParameterSet& iConfig):
     event2pairsEpEp_ = 0;
     event2pairsEpEj_ = 0;
     event2pairsEjEj_ = 0;
+    event2pairsEpJj_ = 0;
+    event2pairsEjJj_ = 0;
+    event2pairsJjJj_ = 0;
+    event1pair_ = 0;
+    event1pairEp_ = 0;
+    event1pairEj_ = 0;
+    event1pairJj_ = 0;
+    event0pair_ = 0;
 }
 
 
@@ -269,8 +277,8 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
             } else {
                 /// More than 1 unique pair in mass band.
                 /// Keep record which zp has already been matched, skip if true
-                bool first_genZp_matched(genZps[0].matched);
-                bool second_genZp_matched(genZps[1].matched);
+                bool first_genZp_matched(false);
+                bool second_genZp_matched(false);
                 for (const auto& q : epPairTmp) {
                     sidm::match_patPair_with_zps(q, genZps, dRusb_); //< This guarentee only 1 or 0 of them would be matched
                     if (!first_genZp_matched && genZps[0].matched) {
@@ -334,7 +342,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                     }), ejPairTmp.end());
         if (ejPairTmp.size() == 0) {
             // No pairs in mass band..
-            EJPAIR = 0; //< PAIR remains as same (0/1).
+            EJPAIR = 0; //< PAIR remains as same (1).
         } else {
             // First, sort by invM
             sort(begin(ejPairTmp), end(ejPairTmp), [this](const auto& lhs, const auto& rhs) {
@@ -342,31 +350,35 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                     float rhsM = (rhs.first->p4()+rhs.second->p4()).M();
                     return std::abs(lhsM-zpMass_) < std::abs(rhsM-zpMass_);
                     });
+            sidm::pairvec<pat::Electron, pat::Jet> ejPair(ejPairTmp, true);
+            ejPairTmp.clear();
+            ejPairTmp = ejPair.get_zip();
+
             if (PAIR == 1) {
                 // We only need to look at the first one, aka, closest to the mass,
                 // compare dR with one of the two gen darkPhotons who is not matched yet.
-                for (auto& zp : genZps) {
-                    sidm::match_patPair_with_zps(ejPairTmp[0], genZps, dRusb_);
-                }
-                int matched_now = count_if(cbegin(genZps), cend(genZps), [](const sidm::Zp& p){return p.matched;});
-                if (matched_now == 1)
-                    EJPAIR = 0;  //< PAIR remains as same (0/1).
-                else if (matched_now == 2) {
-                    zp_r_ = sidm::Zp(ejPairTmp[0]);
-                    zp_r_._eventId = eventNum_;
-                    darkPhoton_rereco_->Fill();
-                    // Remove the matched pat pair from pat::Electron and pat::Jet collection.
-                    sidm::remove_from_collection(&patElectronPtr_, ejPairTmp[0].first);
-                    sidm::remove_from_collection(&patJetPtr_, ejPairTmp[0].second);
+                for (const auto& q : ejPairTmp) {
+                    sidm::match_patPair_with_zps(q, genZps, dRusb_);
+                    int matched_now = count_if(cbegin(genZps), cend(genZps), [](const sidm::Zp& p){return p.matched;});
+                    if (matched_now == 2) {
+                        zp_r_ = sidm::Zp(q);
+                        zp_r_._eventId = eventNum_;
+                        darkPhoton_rereco_->Fill();
+                        // Remove the matched pat pair from pat::Electron and pat::Jet collection.
+                        sidm::remove_from_collection(&patElectronPtr_, q.first);
+                        sidm::remove_from_collection(&patJetPtr_, q.second);
 
-                    PAIR = 2;            //< 2 pairs are reconstructed.
-                    EJPAIR = 1;          //< 1 pair is electron-jet.
-                    ++event2pairs_;
-                    ++event2pairsEpEj_;
+                        PAIR = 2;            //< 2 pairs are reconstructed.
+                        EJPAIR = 1;          //< 1 pair is electron-jet.
+                        ++event2pairs_;
+                        ++event2pairsEpEj_;
+                    }
                 }
+                if (PAIR == 1)
+                    EJPAIR = 0;  //< PAIR remains as same (0/1).
             } else {  //< PAIR==0
-                bool first_genZp_matched(genZps[0].matched);
-                bool second_genZp_matched(genZps[1].matched);
+                bool first_genZp_matched(false);
+                bool second_genZp_matched(false);
                 for (const auto& q : ejPairTmp) {
                     sidm::match_patPair_with_zps(q, genZps, dRusb_);
                     if (!first_genZp_matched && genZps[0].matched) {
@@ -402,51 +414,120 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
             }
         }
     }
+    // ---------------EJ SEARCH END---------------
 
-
+    /**
+     * __JJ PAIR SEARCH__
+     */
     if (PAIR<2) {
-    
-    }
-    /*--
-    if (patEp_es.size()>=2 && patEp_ps.size()>=2) {
-        for (auto& p : genZps) {
-            // sort by dR separately for electrons & positrons, from large to small 
-            sort(begin(patEp_es), end(patEp_es), [p](const pat::Electron& lhs, const pat::Electron& rhs){return deltaR(lhs, *p.first) > deltaR(rhs, *p.first);});
-            sort(begin(patEp_ps), end(patEp_ps), [p](const pat::Electron& lhs, const pat::Electron& rhs){return deltaR(lhs, *p.second) > deltaR(rhs, *p.second);});
-            
-            zp_r_._eventId  = eventNum_;
-
-            zp_r_.e._eta    = patEp_es[-1].eta();
-            zp_r_.e._phi    = patEp_es[-1].phi();
-            zp_r_.e._pt     = patEp_es[-1].pt();
-            zp_r_.e._energy = patEp_es[-1].energy();
-            zp_r_.p._eta    = patEp_ps[-1].eta();
-            zp_r_.p._phi    = patEp_ps[-1].phi();
-            zp_r_.p._pt     = patEp_ps[-1].pt();
-            zp_r_.p._energy = patEp_ps[-1].energy();
-
-            zp_r_._eta  = zp_r_.e._eta + zp_r_.p._eta;
-            zp_r_._invM = ( patEp_es[-1].p4(), patEp_ps[-1].p4() ).M();
-            zp_r_._dEta = abs( zp_r_.e._eta - zp_r_.p._eta );
-            zp_r_._dPhi = abs( zp_r_.p._phi - zp_r_.p._phi );
-            zp_r_._dR   = deltaR( patEp_es[-1], patEp_ps[-1] );
-
-            darkPhoton_rereco_->Fill();
-
-            patEp_es.pop_back();
-            patEp_ps.pop_back();
-
-            cout << "[" << eventNum_ << "] invm:"
-                 << zp_r_._invM << endl;
+        //sidm::pairvec<pat::Jet> jjPair(patJetPtr_, patJetPtr_);
+        vector<pair<Ptr<pat::Jet>, Ptr<pat::Jet> > > jjPairTmp{};
+        for (auto it = cbegin(patJetPtr_); it != cend(patJetPtr_)-1; ++it) {
+            for(auto jt = cbegin(patJetPtr_)+1; jt != cend(patJetPtr_); ++jt) {
+                jjPairTmp.emplace_back(std::make_pair(*it, *jt));
+            }
         }
-    } else {
-        //cout << "[" << eventNum_ << "] e:"
-        //     << patEp_es.size() << " p: " << patEp_ps.size() << endl;
+
+        // Narrow mass sideband
+        jjPairTmp.erase(remove_if(begin(jjPairTmp), end(jjPairTmp), [this](const auto& p){
+                    float m = (p.first->p4()+p.second->p4()).M();
+                    return m>=(1-zpMassSb_)*zpMass_ && m<=(1+zpMassSb_)*zpMass_;
+                    }), jjPairTmp.end());
+        
+        if (jjPairTmp.size()==0) {
+            // Again no pairs in mass band...
+            JJPAIR = 0;
+            if (PAIR == 0) ++event0pair_;
+            else { // PAIR == 1
+                ++event1pair_;
+                if (EPPAIR) ++event1pairEp_;
+                if (EJPAIR) ++event1pairEj_;
+            }
+        } else {
+            // First, sort by invM
+            sort(begin(jjPairTmp), end(jjPairTmp), [this](const auto& lhs, const auto& rhs) {
+                    float lhsM = (lhs.first->p4()+lhs.second->p4()).M();
+                    float rhsM = (rhs.first->p4()+rhs.second->p4()).M();
+                    return std::abs(lhsM-zpMass_) < std::abs(rhsM-zpMass_);
+                    });
+            sidm::pairvec<pat::Jet> jjPair(jjPairTmp, true);
+            jjPairTmp.clear();
+            jjPairTmp = jjPair.get_zip();
+
+            if (PAIR == 1) {
+                for (const auto& q : jjPairTmp) {
+                    sidm::match_patPair_with_zps(jjPairTmp[0], genZps, dRusb_);
+                    int matched_now = count_if(cbegin(genZps), cend(genZps), [](const sidm::Zp& p){return p.matched;});
+                    if (matched_now == 2) {
+                        zp_r_ = sidm::Zp(q);
+                        zp_r_._eventId = eventNum_;
+                        darkPhoton_rereco_->Fill();
+                        // Remove the matched pat pair from pat::Jet collection.
+                        sidm::remove_from_collection(&patJetPtr_, q.first);
+                        sidm::remove_from_collection(&patJetPtr_, q.second);
+
+                        PAIR = 2;        //< 2 pairs are reconstructed.
+                        JJPAIR =1;       //< 1 pair is jet-jet.
+                        ++event2pairs_;
+                        if (EPPAIR) ++event2pairsEpJj_;
+                        if (EJPAIR) ++event2pairsEjJj_;
+                    }
+                }
+                if (PAIR == 1) {
+                    JJPAIR = 0;  //< PAIR remains as same (1).
+                    ++event1pair_;
+                    if (EPPAIR) ++event1pairEp_;
+                    if (EJPAIR) ++event1pairEj_;
+                }
+            } else {  //< PAIR=0
+                bool first_genZp_matched(false);
+                bool second_genZp_matched(false);
+                for (const auto& q : jjPairTmp) {
+                    sidm::match_patPair_with_zps(q, genZps, dRusb_);
+                    if (!first_genZp_matched && genZps[0].matched) {
+                        first_genZp_matched = true;
+                        zp_r_ = sidm::Zp(q);
+                        zp_r_._eventId = eventNum_;
+                        darkPhoton_rereco_->Fill();
+                        // Remove the matched pat pair from pat::Jet collection.
+                        sidm::remove_from_collection(&patJetPtr_, q.first);
+                        sidm::remove_from_collection(&patJetPtr_, q.second);
+                    }
+                    if (!second_genZp_matched && genZps[1].matched) {
+                        second_genZp_matched = true;
+                        zp_r_ = sidm::Zp(q);
+                        zp_r_._eventId = eventNum_;
+                        darkPhoton_rereco_->Fill();
+                        // Remove the matched pat pair from pat::Jet collection.
+                        sidm::remove_from_collection(&patJetPtr_, q.first);
+                        sidm::remove_from_collection(&patJetPtr_, q.second);
+                    }
+                    /// If both matched, skip the rest.
+                    if (first_genZp_matched && second_genZp_matched) break;
+                }
+                int matched_now = static_cast<int>(first_genZp_matched) + static_cast<int>(second_genZp_matched);
+                if (matched_now == 2) {
+                    PAIR = 2;        //< 2 pairs are reconstructed.
+                    JJPAIR = 2;      //< Both are jet-jet pairs.
+                    ++event2pairs_;
+                    ++event2pairsJjJj_;
+                } else if (matched_now == 1) {
+                    PAIR = 1;        //< 1 pair is reconstructed.
+                    JJPAIR = 1;      //< is a jet-jet pair.
+                    ++event1pair_;
+                    ++event1pairJj_;
+                } else if (matched_now == 0) {
+                    JJPAIR = 0;  //< PAIR remains as same(0).
+                    ++event0pair_;
+                }
+            }
+        }
     }
-    --*/
+    // ---------------JJ SEARCH END---------------
+    
+    assert(PAIR == EPPAIR + EJPAIR + JJPAIR);
 
     ++eventNum_;
-    cout << PAIR << EPPAIR << EJPAIR << JJPAIR <<endl;
 
 }
 
