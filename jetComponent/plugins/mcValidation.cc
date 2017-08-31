@@ -522,7 +522,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                         // Store these 2 faking jet
                         j_fake_e_ = sidm::Jet(q.first);
                         jet_properties_->Fill();
-                        j_fake_e_ = sidm::Jet
+                        j_fake_e_ = sidm::Jet(q.second);
                         // Remove the matched pat pair from pat::Jet collection.
                         sidm::remove_from_collection(&patJetPtr_, q.first);
                         sidm::remove_from_collection(&patJetPtr_, q.second);
@@ -535,7 +535,7 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                         // Store these 2 faking jet
                         j_fake_e_ = sidm::Jet(q.first);
                         jet_properties_->Fill();
-                        j_fake_e_ = sidm::Jet
+                        j_fake_e_ = sidm::Jet(q.second);
                         // Remove the matched pat pair from pat::Jet collection.
                         sidm::remove_from_collection(&patJetPtr_, q.first);
                         sidm::remove_from_collection(&patJetPtr_, q.second);

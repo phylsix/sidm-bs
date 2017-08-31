@@ -33,8 +33,8 @@ namespace sidm {
     class Jet : public objBase{
     public:
         Jet(){}
-        Jet(const edm::Ptr<pat::jet>& patj)
-        : _charged_H_over_E( patj->chargedHadronEnergy()/paj->chargedEmEnergy() ),
+        Jet(const edm::Ptr<pat::Jet>& patj)
+        : _charged_H_over_E( patj->chargedHadronEnergy()/patj->chargedEmEnergy() ),
           _H_over_E( patj->emEnergyFraction()/patj->energyFractionHadronic() ),
           _chargedMultiplicity( patj->chargedMultiplicity()),
           _electronEnergyFraction( patj->electronEnergyFraction() ),
@@ -47,12 +47,11 @@ namespace sidm {
             _eta = patj->eta();
         }
 
-.
         float _charged_H_over_E;  //< relative to uncorrected jet energy.
         float _H_over_E;
         int _chargedMultiplicity;
         float _electronEnergyFraction;
-        int _electronMultiplicity;.
+        int _electronMultiplicity;
         int _num_elec_fullin;
         int _num_elec_curledin;
         int _num_elec_curledout;
