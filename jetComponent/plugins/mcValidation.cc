@@ -377,6 +377,9 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                         zp_r_ = sidm::Zp(q);
                         zp_r_._eventId = eventNum_;
                         darkPhoton_rereco_->Fill();
+                        // Store this faking jet
+                        j_fake_e_ = sidm::Jet(q.second);
+                        jet_properties_->Fill();
                         // Remove the matched pat pair from pat::Electron and pat::Jet collection.
                         sidm::remove_from_collection(&patElectronPtr_, q.first);
                         sidm::remove_from_collection(&patJetPtr_, q.second);
@@ -400,6 +403,9 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                         zp_r_ = sidm::Zp(q);
                         zp_r_._eventId = eventNum_;
                         darkPhoton_rereco_->Fill();
+                        // Store this faking jet
+                        j_fake_e_ = sidm::Jet(q.second);
+                        jet_properties_->Fill();
                         // Remove the matched pat pair from pat::Electron and pat::Jet collection.
                         sidm::remove_from_collection(&patElectronPtr_, q.first);
                         sidm::remove_from_collection(&patJetPtr_, q.second);
@@ -409,6 +415,9 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                         zp_r_ = sidm::Zp(q);
                         zp_r_._eventId = eventNum_;
                         darkPhoton_rereco_->Fill();
+                        // Store this faking jet
+                        j_fake_e_ = sidm::Jet(q.second);
+                        jet_properties_->Fill();
                         // Remove the matched pat pair from pat::Electron and pat::Jet collection.
                         sidm::remove_from_collection(&patElectronPtr_, q.first);
                         sidm::remove_from_collection(&patJetPtr_, q.second);
@@ -478,6 +487,11 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                         zp_r_ = sidm::Zp(q);
                         zp_r_._eventId = eventNum_;
                         darkPhoton_rereco_->Fill();
+                        // Store these 2 faking jet
+                        j_fake_e_ = sidm::Jet(q.first);
+                        jet_properties_->Fill();
+                        j_fake_e_ = sidm::Jet(q.second);
+                        jet_properties_->Fill();
                         // Remove the matched pat pair from pat::Jet collection.
                         sidm::remove_from_collection(&patJetPtr_, q.first);
                         sidm::remove_from_collection(&patJetPtr_, q.second);
@@ -505,6 +519,10 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                         zp_r_ = sidm::Zp(q);
                         zp_r_._eventId = eventNum_;
                         darkPhoton_rereco_->Fill();
+                        // Store these 2 faking jet
+                        j_fake_e_ = sidm::Jet(q.first);
+                        jet_properties_->Fill();
+                        j_fake_e_ = sidm::Jet
                         // Remove the matched pat pair from pat::Jet collection.
                         sidm::remove_from_collection(&patJetPtr_, q.first);
                         sidm::remove_from_collection(&patJetPtr_, q.second);
@@ -514,6 +532,10 @@ sidm::mcValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
                         zp_r_ = sidm::Zp(q);
                         zp_r_._eventId = eventNum_;
                         darkPhoton_rereco_->Fill();
+                        // Store these 2 faking jet
+                        j_fake_e_ = sidm::Jet(q.first);
+                        jet_properties_->Fill();
+                        j_fake_e_ = sidm::Jet
                         // Remove the matched pat pair from pat::Jet collection.
                         sidm::remove_from_collection(&patJetPtr_, q.first);
                         sidm::remove_from_collection(&patJetPtr_, q.second);
@@ -555,7 +577,9 @@ void
 sidm::mcValidation::beginJob()
 {
 
+    /// Statistics of multiplicities of collections per event
     eventTree_ = fs_->make<TTree>("eventTree", "information per event");
+    
     eventTree_->Branch("numberOfElectrons", &electron_N, "numberOfElectrons/I");
     eventTree_->Branch("numberOfPositrons", &positron_N, "numberOfPositrons/I");
     eventTree_->Branch("numberOfElectronsZp", &electron_from_zp_N, "numberOfElectronsZp/I");
@@ -565,6 +589,7 @@ sidm::mcValidation::beginJob()
     eventTree_->Branch("numberOfPatElectrons", &patE_N, "numberOfPatElectrons/I");
     eventTree_->Branch("numberOfPatJets", &patJet_N, "numberOfPatJets/I");
 
+    /// darkphoton tree from genParticles
     darkPhoton_reco_ = fs_->make<TTree>("darkPhoton_reco", "gen darkPhotons");
 
     darkPhoton_reco_->Branch("eventId", &zp_._eventId, "eventId/I");
@@ -581,6 +606,7 @@ sidm::mcValidation::beginJob()
     darkPhoton_reco_->Branch("dv_y", &zp_._dv_y, "dv_y/F");
     darkPhoton_reco_->Branch("dv_z", &zp_._dv_z, "dv_z/F");
 
+    /// pseudo-scalor tree from genParticles
     pscalar_reco_ = fs_->make<TTree>("pscalar_reco", "gen pseudo-scalars");
 
     pscalar_reco_->Branch("eventId", &ps_._eventId, "eventId/I");
@@ -590,10 +616,10 @@ sidm::mcValidation::beginJob()
     pscalar_reco_->Branch("dPhi", &ps_._dPhi, "dPhi/F");
     pscalar_reco_->Branch("dR", &ps_._dR, "dR/F");
 
+    /// darkphoton tree from reco particles
     darkPhoton_rereco_ = fs_->make<TTree>("darkPhoton_rereco", "reco darkPhotons");
 
     darkPhoton_rereco_->Branch("eventId", &zp_r_._eventId, "eventId/I");
-
     darkPhoton_rereco_->Branch("pt", &zp_r_._pt, "pt/F");
     darkPhoton_rereco_->Branch("eta", &zp_r_._eta, "eta/F");
     darkPhoton_rereco_->Branch("invm", &zp_r_._invM, "invm/F");
@@ -603,6 +629,20 @@ sidm::mcValidation::beginJob()
     darkPhoton_rereco_->Branch("dEta_ep", &zp_r_._dEta, "dEta_ep/F");
     darkPhoton_rereco_->Branch("dPhi_ep", &zp_r_._dPhi, "dPhi_ep/F");
 
+    /// jets that could be mis-reconstructed electrons
+    jet_properties_ = fs_->make<TTree>("jet_properties", "mis-recoed jets properties");
+
+    jet_properties_->Branch("eventId", &j_fake_e_._eventId, "eventId/I");
+    jet_properties_->Branch("pt", &j_fake_e_._pt, "pt/F");
+    jet_properties_->Branch("eta", &j_fake_e_._eta, "eta/F");
+    jet_properties_->Branch("charged_H_over_E", &j_fake_e_._charged_H_over_E, "charged_H_over_E/F");
+    jet_properties_->Branch("H_over_E", &j_fake_e_._H_over_E, "H_over_E/F");
+    jet_properties_->Branch("electronEnergyFraction", &j_fake_e_._electronEnergyFraction, "electronEnergyFraction/F");
+    jet_properties_->Branch("chargedMultiplicity", &j_fake_e_._chargedMultiplicity, "chargedMultiplicity/I");
+    jet_properties_->Branch("electronMultiplicity", &j_fake_e_._electronMultiplicity, "electronMultiplicity/I");
+    jet_properties_->Branch("num_elec_fullin", &j_fake_e_._num_elec_fullin, "num_elec_fullin/I");
+    jet_properties_->Branch("num_elec_curledin", &j_fake_e_._num_elec_curledin, "num_elec_curledin/I");
+    jet_properties_->Branch("num_elec_curledout", &j_fake_e_._num_elec_curledout, "num_elec_curledout/I");    
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
