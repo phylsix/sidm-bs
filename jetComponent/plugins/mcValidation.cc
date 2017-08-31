@@ -46,16 +46,16 @@ sidm::mcValidation::~mcValidation()
     std::cout << "\n\nNumber of events: " << eventNum_ << "\n\n";
     std::cout << std::setprecision(4) << std::fixed;
     std::cout << "2 pairs events: " << event2pairs_ << " [" << float(event2pairs_)/eventNum_ << "]\n";
-    std::cout << "\tEpEp: " << event2pairsEpEp_ << " [" << float(event2pairsEpEp_)/event2pairs_ << "][" << float(event2pairsEpEp_)/eventNum_ <<"]\n";
-    std::cout << "\tEpEj: " << event2pairsEpEj_ << " [" << float(event2pairsEpEj_)/event2pairs_ << "][" << float(event2pairsEpEj_)/eventNum_ <<"]\n";
-    std::cout << "\tEjEj: " << event2pairsEjEj_ << " [" << float(event2pairsEjEj_)/event2pairs_ << "][" << float(event2pairsEjEj_)/eventNum_ <<"]\n";
-    std::cout << "\tEpJj: " << event2pairsEpJj_ << " [" << float(event2pairsEpJj_)/event2pairs_ << "][" << float(event2pairsEpJj_)/eventNum_ <<"]\n";
-    std::cout << "\tEjJj: " << event2pairsEjJj_ << " [" << float(event2pairsEjJj_)/event2pairs_ << "][" << float(event2pairsEjJj_)/eventNum_ <<"]\n";
-    std::cout << "\tJjJj: " << event2pairsJjJj_ << " [" << float(event2pairsJjJj_)/event2pairs_ << "][" << float(event2pairsJjJj_)/eventNum_ <<"]\n";
+    std::cout << "\tEpEp: " << std::setw(7) << event2pairsEpEp_ << " [" << float(event2pairsEpEp_)/event2pairs_ << "][" << float(event2pairsEpEp_)/eventNum_ <<"]\n";
+    std::cout << "\tEpEj: " << std::setw(7) << event2pairsEpEj_ << " [" << float(event2pairsEpEj_)/event2pairs_ << "][" << float(event2pairsEpEj_)/eventNum_ <<"]\n";
+    std::cout << "\tEjEj: " << std::setw(7) << event2pairsEjEj_ << " [" << float(event2pairsEjEj_)/event2pairs_ << "][" << float(event2pairsEjEj_)/eventNum_ <<"]\n";
+    std::cout << "\tEpJj: " << std::setw(7) << event2pairsEpJj_ << " [" << float(event2pairsEpJj_)/event2pairs_ << "][" << float(event2pairsEpJj_)/eventNum_ <<"]\n";
+    std::cout << "\tEjJj: " << std::setw(7) << event2pairsEjJj_ << " [" << float(event2pairsEjJj_)/event2pairs_ << "][" << float(event2pairsEjJj_)/eventNum_ <<"]\n";
+    std::cout << "\tJjJj: " << std::setw(7) << event2pairsJjJj_ << " [" << float(event2pairsJjJj_)/event2pairs_ << "][" << float(event2pairsJjJj_)/eventNum_ <<"]\n";
     std::cout << "1 pair events: " << event1pair_ << " [" << float(event1pair_)/eventNum_ << "]\n";
-    std::cout << "\tEp: " << event1pairEp_ << " [" << float(event1pairEp_)/event1pair_ << "][" << float(event1pairEp_)/eventNum_ <<"]\n";
-    std::cout << "\tEj: " << event1pairEj_ << " [" << float(event1pairEj_)/event1pair_ << "][" << float(event1pairEj_)/eventNum_ <<"]\n";
-    std::cout << "\tEp: " << event1pairJj_ << " [" << float(event1pairJj_)/event1pair_ << "][" << float(event1pairJj_)/eventNum_ <<"]\n";
+    std::cout << "\tEp: " << std::setw(7) << event1pairEp_ << " [" << float(event1pairEp_)/event1pair_ << "][" << float(event1pairEp_)/eventNum_ <<"]\n";
+    std::cout << "\tEj: " << std::setw(7) << event1pairEj_ << " [" << float(event1pairEj_)/event1pair_ << "][" << float(event1pairEj_)/eventNum_ <<"]\n";
+    std::cout << "\tEp: " << std::setw(7) << event1pairJj_ << " [" << float(event1pairJj_)/event1pair_ << "][" << float(event1pairJj_)/eventNum_ <<"]\n";
     std::cout << "0 pair events: " << event0pair_ << " [" << float(event0pair_)/eventNum_ << "]\n";
     eventNum_ = 0;
 
