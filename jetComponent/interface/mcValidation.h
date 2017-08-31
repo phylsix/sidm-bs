@@ -60,6 +60,9 @@ namespace sidm {
             TTree* pscalar_reco_;
             sidm::Ps ps_;
 
+            TTree* jet_properties_;
+            sidm::Jet j_fake_e_;
+
             Int_t eventNum_;
             Int_t event2pairs_;
             Int_t event1pair_;
@@ -91,6 +94,6 @@ namespace sidm {
             double dRusb_;
     };
 
-}
+}  // namespace sidm
 
 #endif
