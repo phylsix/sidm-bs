@@ -85,6 +85,7 @@ namespace sidm {
             _dR   = std::sqrt(_dEta*_dEta + _dPhi*_dPhi);
         }
         Zp(const std::pair<edm::Ptr<reco::Candidate>, edm::Ptr<reco::Candidate> >& q) {
+            matched = false;
             e = sidm::Ep(q.first);
             p = sidm::Ep(q.second);
             _dEta = std::abs(e._eta - p._eta);
@@ -95,6 +96,7 @@ namespace sidm {
             _pt   = e._pt + p._pt;
         }
         Zp(const reco::Candidate* gene, const reco::Candidate* genp) {
+            matched = false;
             e = sidm::Ep(gene);
             p = sidm::Ep(genp);
             _dEta = std::abs(gene->eta() - genp->eta());
@@ -114,13 +116,13 @@ namespace sidm {
         float _dv_y;
         float _dv_z;
         std::pair<float, float> dRVal (const std::pair<edm::Ptr<reco::Candidate>, edm::Ptr<reco::Candidate> >& q) const {
-            std::pair<float, float> tmp(0., 0.);
+            std::pair<float, float> tmp(999., 999.);
             tmp.first = std::sqrt( (e._eta-q.first->eta())*(e._eta-q.first->eta()) + (e._phi-q.first->phi())*(e._phi-q.first->phi()) );
             tmp.second = std::sqrt( (p._eta-q.second->eta())*(p._eta-q.second->eta()) + (p._phi-q.second->phi())*(p._phi-q.second->phi()) );
             return tmp;
         }
         std::pair<float, float> dRVal (const edm::Ptr<pat::Jet>& j) const {
-            std::pair<float, float> tmp(0., 0.);
+            std::pair<float, float> tmp(999., 999.);
             tmp.first  = std::sqrt( (e._eta-j->eta())*(e._eta-j->eta()) + (e._phi-j->phi())*(e._phi-j->phi()) );
             tmp.second = std::sqrt( (p._eta-j->eta())*(p._eta-j->eta()) + (p._phi-j->phi())*(p._phi-j->phi()) );
             return tmp;

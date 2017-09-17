@@ -42,11 +42,11 @@ sidm::electronInJetValidation::~electronInJetValidation()
     std::cout << std::setprecision(4) << std::fixed;
     std::cout << "2 pairs events: " << event2pairs_ << " [" << float(event2pairs_)/eventNum_ << "]\n";
     std::cout << "\tEpEp: " << std::setw(7) << event2pairsEpEp_ << " [" << float(event2pairsEpEp_)/event2pairs_ << "][" << float(event2pairsEpEp_)/eventNum_ <<"]\n";
-    std::cout << "\tEpEj: " << std::setw(7) << event2pairsEpJt_ << " [" << float(event2pairsEpJt_)/event2pairs_ << "][" << float(event2pairsEpJt_)/eventNum_ <<"]\n";
-    std::cout << "\tEjEj: " << std::setw(7) << event2pairsJtJt_ << " [" << float(event2pairsJtJt_)/event2pairs_ << "][" << float(event2pairsJtJt_)/eventNum_ <<"]\n";
+    std::cout << "\tEpJt: " << std::setw(7) << event2pairsEpJt_ << " [" << float(event2pairsEpJt_)/event2pairs_ << "][" << float(event2pairsEpJt_)/eventNum_ <<"]\n";
+    std::cout << "\tJtJt: " << std::setw(7) << event2pairsJtJt_ << " [" << float(event2pairsJtJt_)/event2pairs_ << "][" << float(event2pairsJtJt_)/eventNum_ <<"]\n";
     std::cout << "1 pair events: " << event1pair_ << " [" << float(event1pair_)/eventNum_ << "]\n";
-    std::cout << "\tEp: " << std::setw(7) << event1pairEp_ << " [" << float(event1pairEp_)/event1pair_ << "][" << float(event1pairEp_)/eventNum_ <<"]\n";
-    std::cout << "\tEj: " << std::setw(7) << event1pairJt_ << " [" << float(event1pairJt_)/event1pair_ << "][" << float(event1pairJt_)/eventNum_ <<"]\n";
+    std::cout << "\tEp: "   << std::setw(9) << event1pairEp_ << " [" << float(event1pairEp_)/event1pair_ << "][" << float(event1pairEp_)/eventNum_ <<"]\n";
+    std::cout << "\tJt: "   << std::setw(9) << event1pairJt_ << " [" << float(event1pairJt_)/event1pair_ << "][" << float(event1pairJt_)/eventNum_ <<"]\n";
     std::cout << "0 pair events: " << event0pair_ << " [" << float(event0pair_)/eventNum_ << "]\n";
     eventNum_ = 0;
 
@@ -320,8 +320,10 @@ sidm::electronInJetValidation::analyze(const edm::Event& iEvent, const edm::Even
      */
     vector<Ptr<pat::Jet> > patJetPtr_ = patJetHdl_->ptrs();
     if ( PAIR==1 ) {
-        assert(std::count_if(cbegin(genZps),cend(genZps),
-                   [](const sidm::Zp& q){return q.matched;})==1); 
+        const int matchedNow = std::count_if(cbegin(genZps),cend(genZps),
+                [](const auto& q){return q.matched;});
+        if (matchedNow != 1) {cout << "In PAIR==1, matched="<<matchedNow<<endl;}
+        assert(matchedNow==1); 
         vector<Ptr<pat::Jet> > patJetPtrTmp{};
         sidm::Zp theUnmatched;
         for (const auto& q : genZps) {
