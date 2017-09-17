@@ -119,6 +119,12 @@ namespace sidm {
             tmp.second = std::sqrt( (p._eta-q.second->eta())*(p._eta-q.second->eta()) + (p._phi-q.second->phi())*(p._phi-q.second->phi()) );
             return tmp;
         }
+        std::pair<float, float> dRVal (const edm::Ptr<pat::Jet>& j) const {
+            std::pair<float, float> tmp(0., 0.);
+            tmp.first  = std::sqrt( (e._eta-j->eta())*(e._eta-j->eta()) + (e._phi-j->phi())*(e._phi-j->phi()) );
+            tmp.second = std::sqrt( (p._eta-j->eta())*(p._eta-j->eta()) + (p._phi-j->phi())*(p._phi-j->phi()) );
+            return tmp;
+        }
     };
 
     class Ps : public objCompound{
