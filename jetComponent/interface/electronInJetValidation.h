@@ -1,0 +1,93 @@
+#ifndef SIDMBS_ELECTRONINJETVALIDATION_H
+#define SIDMBS_ELECTRONINJETVALIDATION_H
+
+#include <memory>
+#include <vector>
+
+#include "FWCore/Framework/interface/Frameworkfwd.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
+
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/MakerMacros.h"
+
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "FWCore/Utilities/interface/InputTag.h"
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
+
+#include "DataFormats/Common/interface/Ptr.h"
+#include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
+#include "DataFormats/Candidate/interface/Candidate.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "DataFormats/PatCandidates/interface/Electron.h"
+#include "DataFormats/PatCandidates/interface/Jet.h"
+
+#include "TTree.h"
+#include "sidm-bs/jetComponent/interface/physicsObject.h"
+
+namespace sidm {
+
+    class electronInJetValidation : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
+        public:
+            explicit electronInJetValidation(const edm::ParameterSet&);
+            ~electronInJetValidation();
+
+            static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+
+
+        private:
+            virtual void beginJob() override;
+            virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
+            virtual void endJob() override;
+
+            // ----------member data ---------------------------
+
+            edm::Service<TFileService> fs_;
+            const edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticleTk_;
+            const edm::EDGetTokenT<edm::View<pat::Electron> > patElectronTk_;
+            const edm::EDGetTokenT<edm::View<pat::Jet> > patJetTk_;
+            
+            TTree* eventTree_;
+
+            TTree* darkPhoton_reco_;
+            sidm::Zp zp_;
+            
+            TTree* darkPhoton_rereco_;
+            sidm::Zp zp_r_;
+
+            TTree* pscalar_reco_;
+            sidm::Ps ps_;
+
+            TTree* jet_properties_;
+            sidm::Jet j_fake_e_;
+
+            Int_t eventNum_;
+            Int_t event2pairs_;
+            Int_t event1pair_;
+            Int_t event0pair_;
+
+            Int_t event2pairsEpEp_;
+            Int_t event2pairsEpJt_;
+            Int_t event2pairsJtJt_;
+
+            Int_t event1pairEp_;
+            Int_t event1pairJt_;
+
+
+            Int_t electron_N;
+            Int_t positron_N;
+            Int_t electron_from_zp_N;
+            Int_t positron_from_zp_N;
+            Int_t zp_N;
+            Int_t ps_N;
+            Int_t patE_N;
+            Int_t patJet_N;
+
+            double zpMassSb_;
+            double zpMass_;
+            double dRusb_;
+    };
+
+}  // namespace sidm
+
+#endif
