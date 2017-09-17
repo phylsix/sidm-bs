@@ -34,14 +34,14 @@ namespace sidm {
     public:
         Jet(){}
         Jet(const edm::Ptr<pat::Jet>& patj)
-        : _charged_H_over_E( patj->chargedHadronEnergy()/patj->chargedEmEnergy() ),
-          _H_over_E( patj->emEnergyFraction()/patj->energyFractionHadronic() ),
-          _chargedMultiplicity( patj->chargedMultiplicity()),
-          _electronEnergyFraction( patj->electronEnergyFraction() ),
-          _electronMultiplicity( patj->electronMultiplicity() ),
-          _num_elec_fullin( patj->elecsInVertexInCalo().size() ),
-          _num_elec_curledin( patj->elecsOutVertexInCalo().size() ),
-          _num_elec_curledout( patj->elecsInVertexOutCalo().size() )
+            : _charged_H_over_E( (patj->isPFJet() || patj->isJPTJet()) ? patj->chargedHadronEnergy()/patj->chargedEmEnergy() : -999 ),
+              _H_over_E( patj->isCaloJet() ? patj->energyFractionHadronic()/patj->emEnergyFraction():-999 ),
+              _chargedMultiplicity( (patj->isPFJet() || patj->isJPTJet()) ? patj->chargedMultiplicity():-999),
+              _electronEnergyFraction( patj->isPFJet() ? patj->electronEnergyFraction() : -999 ),
+              _electronMultiplicity( patj->isPFJet() ? patj->electronMultiplicity():-999),
+              _num_elec_fullin( patj->isJPTJet() ?  patj->elecsInVertexInCalo().size():-999 ),
+              _num_elec_curledin( patj->isJPTJet() ? patj->elecsOutVertexInCalo().size():-999 ),
+              _num_elec_curledout( patj->isJPTJet() ? patj->elecsInVertexOutCalo().size():-999 )
         {
             _pt = patj->pt();
             _eta = patj->eta();

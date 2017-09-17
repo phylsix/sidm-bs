@@ -12,7 +12,7 @@ ROOT.gStyle.SetPadTickY(1)
 ROOT.gStyle.SetPalette(ROOT.kRedBlue)
 
 
-f = ROOT.TFile(os.path.join(PLUGINBASE, 'mydata', 'mcvalidation0819.root'))
+f = ROOT.TFile(os.path.join(PLUGINBASE, 'mydata', 'mcvalidation0822.root'))
 
 c0 = ROOT.TCanvas('c0','',500,500)
 c1 = ROOT.TCanvas('c1','',500,500)
@@ -31,9 +31,9 @@ h_zp_m = ROOT.TH1F('h_zp_m_','',20,0.,0.2) # 0.1GeV
 h_ps_m = ROOT.TH1F('h_ps_m_','',30,98.5,101.5) # 100GeV
 h_ep_dEtadPhi = ROOT.TH2F('h_ep_dEtadPhi_','',100,0,0.1,100,0,0.1)
 h_ep_dR = ROOT.TH1F('h_ep_dR_','',100,0,0.15)
-h_ep_vxvy = ROOT.TH2F('h_ep_vxvy_','',100,-50,50,100,-50,50)
-h_ep_vz = ROOT.TH1F('h_ep_vz_','',100,-400,400)
-h_ep_r = ROOT.TH1F('h_ep_r_','',100,0,200) # range to be tuned
+h_ep_vxvy = ROOT.TH2F('h_ep_vxvy_','',260,-130,130,260,-130,130)
+h_ep_vz = ROOT.TH1F('h_ep_vz_','',100,-314,314)
+h_ep_r = ROOT.TH1F('h_ep_r_','',100,0,300) # range to be tuned
 h_ps_dEtadPhi = ROOT.TH2F('h_ps_dEtadPhi_','',100,0,7,100,0,7)
 h_ps_dR = ROOT.TH1F('h_ps_dR_','',100,0,7)
 
@@ -158,15 +158,15 @@ rootTools.styleStatsBox([h_ps_dR],'fill')
 c8.Update()
 
 
-c0.Print(PLUGINBASE+'/plots/mcValidation0819.pdf(')
-c1.Print(PLUGINBASE+'/plots/mcValidation0819.pdf')
-c2.Print(PLUGINBASE+'/plots/mcValidation0819.pdf')
-c3.Print(PLUGINBASE+'/plots/mcValidation0819.pdf')
-c4.Print(PLUGINBASE+'/plots/mcValidation0819.pdf')
-c5.Print(PLUGINBASE+'/plots/mcValidation0819.pdf')
-c6.Print(PLUGINBASE+'/plots/mcValidation0819.pdf')
-c7.Print(PLUGINBASE+'/plots/mcValidation0819.pdf')
-c8.Print(PLUGINBASE+'/plots/mcValidation0819.pdf)')
+c0.Print(PLUGINBASE+'/plots/mcValidation0822.pdf(')
+c1.Print(PLUGINBASE+'/plots/mcValidation0822.pdf')
+c2.Print(PLUGINBASE+'/plots/mcValidation0822.pdf')
+c3.Print(PLUGINBASE+'/plots/mcValidation0822.pdf')
+c4.Print(PLUGINBASE+'/plots/mcValidation0822.pdf')
+c5.Print(PLUGINBASE+'/plots/mcValidation0822.pdf')
+c6.Print(PLUGINBASE+'/plots/mcValidation0822.pdf')
+c7.Print(PLUGINBASE+'/plots/mcValidation0822.pdf')
+c8.Print(PLUGINBASE+'/plots/mcValidation0822.pdf)')
 
-cmd = "cp {0}/plots/mcValidation0819.pdf /publicweb/w/wsi/public".format(PLUGINBASE)
+cmd = "cp {0}/plots/mcValidation0822.pdf /publicweb/w/wsi/public".format(PLUGINBASE)
 os.system(cmd)
