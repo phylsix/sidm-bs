@@ -29,7 +29,7 @@ mcValidationParams = cms.PSet(
     # The mass window would be [ (1-ZpMassSideBand)*ZpMass, (1+ZpMassSideBand)*ZpMass ]
     ZpMassSideBand = cms.untracked.double(1.),
     ZpMass         = cms.untracked.double(0.1),
-    dRusb          = cms.untracked.double(0.1)
+    dRusb          = cms.untracked.double(0.4)
 )
 
 process.mcValidation = cms.EDAnalyzer('sidm::mcValidation',
@@ -41,6 +41,6 @@ process.mcValidation = cms.EDAnalyzer('sidm::mcValidation',
                                       PatJetTag_ = cms.untracked.InputTag('slimmedJets')
 )
 process.TFileService = cms.Service("TFileService",
-                                   fileName = cms.string("$CMSSW_BASE/src/sidm-bs/jetComponent/mydata/mcvalidation0826.root"))
+                                   fileName = cms.string("$CMSSW_BASE/src/sidm-bs/jetComponent/mydata/mcvalidation_100MeV_10e-12GeV.root"))
 
 process.p = cms.Path(process.mcValidation)

@@ -27,7 +27,7 @@ electronInJetValidationParams = cms.PSet(
     ### parameter set
 
     # The mass window would be [ (1-ZpMassSideBand)*M, (1+ZpMassSideBand)*M ]
-    ZpMassSideBand = cms.untracked.double(0.1), 
+    ZpMassSideBand = cms.untracked.double(1), 
     ZpMass         = cms.untracked.double(0.1),
     dRusb          = cms.untracked.double(0.4)
 )
@@ -42,6 +42,6 @@ process.electronInJetValidation = cms.EDAnalyzer('sidm::electronInJetValidation'
 )
 process.TFileService = cms.Service("TFileService",
                                    fileName
-                                   = cms.string("$CMSSW_BASE/src/sidm-bs/jetComponent/mydata/electronInJetValidation.root"))
+                                   = cms.string("$CMSSW_BASE/src/sidm-bs/jetComponent/mydata/electronInJetValidation_100MeV_10e-13GeV.root"))
 
 process.p = cms.Path(process.electronInJetValidation)
