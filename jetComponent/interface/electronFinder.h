@@ -52,12 +52,14 @@ namespace sidm {
             
             TTree* eventTree_;
 
-
             Int_t eventNum_;
             //Int_t genElectron_N;
             Int_t pkdGenElectron_N;
             Int_t pfElectron_N;
             Int_t pfGamma_N;
+
+            TTree* darkPhotonFromGenElectronsTree_;
+            sidm::Zp darkPhotonFromGenEle_;
     };
 
 }  // namespace sidm

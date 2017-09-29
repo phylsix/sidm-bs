@@ -63,13 +63,38 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
     for (const auto& zp : *genParticleHdl_) {
         if (zp.pdgId() != 32) continue;
+        vector<const pat::PackedGenParticle*> electronsFromSingelDarkPhoton{};
+
         for (const auto& p : *pkdGenHdl_) {
             if (abs(p.pdgId()) != 11) continue;
             const reco::Candidate* motherInPrunedCollection(p.mother(0));
             if (motherInPrunedCollection != nullptr && sidm::is_ancestor(&zp, motherInPrunedCollection)) {
                 ++pkdGenElectron_N;
+                electronsFromSingelDarkPhoton.push_back(&p);
             }
         }
+
+        if (electronsFromSingelDarkPhoton.size()!=2) {
+            cout<<"Event"<<eventNum_<<": Darkphoton is not mother of two electrons, instead- "<<electronsFromSingelDarkPhoton.size()<<endl;
+            continue; /// This darkphoton does not have two electron daughters
+        }
+
+        if (electronsFromSingelDarkPhoton[0]->charge() > 0 && electronsFromSingelDarkPhoton[1]->charge() < 0) {
+            darkPhotonFromGenEle_ = sidm::Zp(electronsFromSingelDarkPhoton[1], electronsFromSingelDarkPhoton[0]);
+        } else if (electronsFromSingelDarkPhoton[0]->charge() < 0 && electronsFromSingelDarkPhoton[1]->charge() > 0) {
+            darkPhotonFromGenEle_ = sidm::Zp(electronsFromSingelDarkPhoton[0], electronsFromSingelDarkPhoton[1]);
+        } else {
+            cout<<"Event"<<eventNum_<<": Darkphoton is mother of two electrons, but not opposite charge, skip-";
+            continue;
+        }
+
+        darkPhotonFromGenEle_._eventId = eventNum_;
+        darkPhotonFromGenEle_._pt      = zp.pt();
+        darkPhotonFromGenEle_._eta     = zp.eta();
+        darkPhotonFromGenEle_._mass    = zp.mass();
+
+        darkPhotonFromGenElectronsTree_->Fill();
+        //assert(electronsFromSingelDarkPhoton.size() == 2);
     }
     //pkdGenElectron_N = count_if(cbegin(*pkdGenHdl_), cend(*pkdGenHdl_),
     //        [](const auto& p){ return abs(p.pdgId()) == 11 && p.mother(0)->pdgId() == 32; });
@@ -95,6 +120,23 @@ sidm::electronFinder::beginJob()
     eventTree_->Branch("numOfEleInPfCands", &pfElectron_N, "numOfEleInPfCands/I");
     eventTree_->Branch("numOfPhoInPfCands", &pfGamma_N, "numOfPhoInPfCands/I");
     // eventTree_->Branch("numberOfElectrons", &electron_N, "numberOfElectrons/I");
+
+    darkPhotonFromGenElectronsTree_ = fs_->make<TTree>("darkPhotonFromGenElectrons",
+            "darkphotons reco from electrons in packedGenParticles collection");
+    darkPhotonFromGenElectronsTree_->Branch("eventId", &darkPhotonFromGenEle_._eventId, "eventId/I");
+    darkPhotonFromGenElectronsTree_->Branch("pt",      &darkPhotonFromGenEle_._pt, "pt/F");
+    darkPhotonFromGenElectronsTree_->Branch("eta",     &darkPhotonFromGenEle_._eta, "eta/F");
+    darkPhotonFromGenElectronsTree_->Branch("mass",    &darkPhotonFromGenEle_._mass, "mass/F");
+    darkPhotonFromGenElectronsTree_->Branch("invm",    &darkPhotonFromGenEle_._invM, "invm/F");
+    darkPhotonFromGenElectronsTree_->Branch("pt_e",    &darkPhotonFromGenEle_.e._pt, "pt_e/F");
+    darkPhotonFromGenElectronsTree_->Branch("pt_p",    &darkPhotonFromGenEle_.p._pt, "pt_p/F");
+    darkPhotonFromGenElectronsTree_->Branch("dR_ep",   &darkPhotonFromGenEle_._dR, "dR_ep/F");
+    darkPhotonFromGenElectronsTree_->Branch("dEta_ep", &darkPhotonFromGenEle_._dEta, "dEta_ep/F");
+    darkPhotonFromGenElectronsTree_->Branch("dPhi_ep", &darkPhotonFromGenEle_._dPhi, "dPhi_ep/F");
+    darkPhotonFromGenElectronsTree_->Branch("dv_x",    &darkPhotonFromGenEle_._dv_x, "dv_x/F");
+    darkPhotonFromGenElectronsTree_->Branch("dv_y",    &darkPhotonFromGenEle_._dv_y, "dv_y/F");
+    darkPhotonFromGenElectronsTree_->Branch("dv_z",    &darkPhotonFromGenEle_._dv_z, "dv_z/F");
+
 
 }
 
