@@ -9,7 +9,8 @@
 <use name="DataFormats/Math"/>
 <use name="DataFormats/PatCandidates"/>
 <use name="sidm-bs/jetComponent"/>
-<use name="sidm-bs/electronInJetValidation"/>
-<library file="*.cc", name="sidm-bsjetComponentAuto">
-    <flags EDM_PLUGIN="1"/>
+<!--use name="sidm-bs/electronInJetValidation"/>
+<use name="sidm-bs/electronFinder"/-->
+<library file="*.cc" name="sidm-bsjetComponentAuto">
+    <flags EdmPlugin="1"/>
 </library>
