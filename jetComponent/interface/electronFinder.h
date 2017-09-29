@@ -18,6 +18,7 @@
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
+#include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
@@ -45,6 +46,7 @@ namespace sidm {
             edm::Service<TFileService> fs_;
             const edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticleTk_;
             const edm::EDGetTokenT<edm::View<pat::PackedCandidate> > pfTk_;
+            const edm::EDGetTokenT<edm::View<pat::PackedGenParticle> > pkdGenTk_;
             const edm::EDGetTokenT<edm::View<pat::Electron> > patElectronTk_;
             const edm::EDGetTokenT<edm::View<pat::Jet> > patJetTk_;
             
@@ -52,7 +54,10 @@ namespace sidm {
 
 
             Int_t eventNum_;
+            //Int_t genElectron_N;
+            Int_t pkdGenElectron_N;
             Int_t pfElectron_N;
+            Int_t pfGamma_N;
     };
 
 }  // namespace sidm

@@ -92,6 +92,8 @@ namespace sidm {
         if (to_be_removed != collection->end())
             collection->erase(to_be_removed);
     }
+
+    bool is_ancestor (const reco::Candidate* ancestor, const reco::Candidate* particle);
 }
 
 #endif

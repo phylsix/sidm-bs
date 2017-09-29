@@ -18,6 +18,7 @@
 sidm::electronFinder::electronFinder(const edm::ParameterSet& iConfig):
     genParticleTk_(consumes<edm::View<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("GenParticleTag_", edm::InputTag("prunedGenParticles")))),
     pfTk_(consumes<edm::View<pat::PackedCandidate> >(iConfig.getUntrackedParameter<edm::InputTag>("PatPfTag_", edm::InputTag("packedPFCandidates")))),
+    pkdGenTk_(consumes<edm::View<pat::PackedGenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("PatPkdGenTag_", edm::InputTag("packedGenParticles")))),
     patElectronTk_(consumes<edm::View<pat::Electron> >(iConfig.getUntrackedParameter<edm::InputTag>("PatElectronTag_", edm::InputTag("slimmedElectrons")))),
     patJetTk_(consumes<edm::View<pat::Jet> >(iConfig.getUntrackedParameter<edm::InputTag>("PatJetTag_", edm::InputTag("slimmedJets"))))
 {
@@ -44,6 +45,9 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     Handle<View<reco::GenParticle> > genParticleHdl_;
     iEvent.getByToken(genParticleTk_, genParticleHdl_);
 
+    Handle<View<pat::PackedGenParticle> > pkdGenHdl_;
+    iEvent.getByToken(pkdGenTk_, pkdGenHdl_);
+
     Handle<View<pat::Electron> > patElectronHdl_;
     iEvent.getByToken(patElectronTk_, patElectronHdl_);
 
@@ -53,9 +57,26 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     Handle<View<pat::PackedCandidate> > pfHdl_;
     iEvent.getByToken(pfTk_, pfHdl_);
 
+    pkdGenElectron_N = 0; /// number of electrons who are coming from darkphotons
+    pfElectron_N     = 0;
+    pfGamma_N        = 0;
+
+    for (const auto& zp : *genParticleHdl_) {
+        if (zp.pdgId() != 32) continue;
+        for (const auto& p : *pkdGenHdl_) {
+            if (abs(p.pdgId()) != 11) continue;
+            const reco::Candidate* motherInPrunedCollection(p.mother(0));
+            if (motherInPrunedCollection != nullptr && sidm::is_ancestor(&zp, motherInPrunedCollection)) {
+                ++pkdGenElectron_N;
+            }
+        }
+    }
+    //pkdGenElectron_N = count_if(cbegin(*pkdGenHdl_), cend(*pkdGenHdl_),
+    //        [](const auto& p){ return abs(p.pdgId()) == 11 && p.mother(0)->pdgId() == 32; });
     pfElectron_N = count_if(cbegin(*pfHdl_), cend(*pfHdl_),
             [](const auto& p){ return abs(p.pdgId()) == 11; });
-    //cout<<"Event"<<eventNum_<<": "<<pfElectron_N<<endl;
+    pfGamma_N = count_if(cbegin(*pfHdl_), cend(*pfHdl_),
+            [](const auto& p){ return p.pdgId() == 22; });
     eventTree_->Fill();
 
     ++eventNum_;
@@ -69,7 +90,10 @@ sidm::electronFinder::beginJob()
     /// Statistics of multiplicities of collections per event
     eventTree_ = fs_->make<TTree>("eventTree", "information per event");
     
+    //eventTree_->Branch("numOfEleInPrunedGen", &genElectron_N, "numOfEleInPrunedGen/I");
+    eventTree_->Branch("numOfEleInPackedGen", &pkdGenElectron_N, "numOfEleInPackedGen/I");
     eventTree_->Branch("numOfEleInPfCands", &pfElectron_N, "numOfEleInPfCands/I");
+    eventTree_->Branch("numOfPhoInPfCands", &pfGamma_N, "numOfPhoInPfCands/I");
     // eventTree_->Branch("numberOfElectrons", &electron_N, "numberOfElectrons/I");
 
 }

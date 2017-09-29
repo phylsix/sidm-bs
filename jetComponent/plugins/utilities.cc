@@ -78,3 +78,12 @@ sidm::match_jet_with_zps (const edm::Ptr<pat::Jet>& under_test,
     }
 }
 --*/
+
+bool
+sidm::is_ancestor (const reco::Candidate* ancestor, const reco::Candidate* particle) {
+    if (ancestor == particle) return true;
+    for (size_t i = 0; i < particle->numberOfMothers(); ++i) {
+        if (is_ancestor(ancestor, particle->mother(i))) return true;
+    }
+    return false;
+}

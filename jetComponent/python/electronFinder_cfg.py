@@ -27,7 +27,8 @@ process.electronFinder = cms.EDAnalyzer("sidm::electronFinder",
             GenParticleTag_ = cms.untracked.InputTag('prunedGenParticles'),
             PatElectronTag_ = cms.untracked.InputTag("slimmedElectrons"),
                  PatJetTag_ = cms.untracked.InputTag("slimmedJets"),
-                  PatPfTag_ = cms.untracked.InputTag("packedPFCandidates")
+                  PatPfTag_ = cms.untracked.InputTag("packedPFCandidates"),
+              PatPkdGenTag_ = cms.untracked.InputTag("packedGenParticles")
 )
 process.TFileService = cms.Service("TFileService",
                                    fileName
