@@ -63,10 +63,12 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
     for (const auto& zp : *genParticleHdl_) {
         if (zp.pdgId() != 32) continue;
-        vector<const pat::PackedGenParticle*> electronsFromSingelDarkPhoton{};
+        //vector<const pat::PackedGenParticle*> electronsFromSingelDarkPhoton{};
+        vector<const reco::GenParticle*> electronsFromSingelDarkPhoton{};
 
-        for (const auto& p : *pkdGenHdl_) {
-            if (abs(p.pdgId()) != 11) continue;
+        //for (const auto& p : *pkdGenHdl_) {
+        for (const auto& p : *genParticleHdl_) {
+            if (p.status() != 1 || abs(p.pdgId()) != 11) continue;
             const reco::Candidate* motherInPrunedCollection(p.mother(0));
             if (motherInPrunedCollection != nullptr && sidm::is_ancestor(&zp, motherInPrunedCollection)) {
                 ++pkdGenElectron_N;
