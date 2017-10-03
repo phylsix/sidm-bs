@@ -32,6 +32,6 @@ process.electronFinder = cms.EDAnalyzer("sidm::electronFinder",
 )
 process.TFileService = cms.Service("TFileService",
                                    fileName
-                                   = cms.string("$CMSSW_BASE/src/sidm-bs/jetComponent/mydata/electronFinder.root"))
+                                   = cms.string("$CMSSW_BASE/src/sidm-bs/jetComponent/mydata/electronFinder_100MeV_10E-12GeV.root"))
 
 process.p = cms.Path(process.electronFinder)
