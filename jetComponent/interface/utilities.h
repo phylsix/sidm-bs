@@ -94,6 +94,13 @@ namespace sidm {
     }
 
     bool is_ancestor (const reco::Candidate* ancestor, const reco::Candidate* particle);
+
+    template<class T, class U>
+    float dR (const T& p, const U& q) {
+        float dEta = p->eta() - q->eta();
+        float dPhi = p->phi() - q->phi();
+        return sqrt(dEta*dEta + dPhi*dPhi);
+    }
 }
 
 #endif
