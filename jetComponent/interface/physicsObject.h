@@ -65,7 +65,13 @@ namespace sidm {
     class Ep : public objBase{
     public:
         Ep(){}
-        Ep(const Ep& ep_): _indexInCollection(ep_.indexInCollection()) {}
+        Ep(const Ep& ep_): _indexInCollection(ep_.indexInCollection()) {
+            _pt     = ep_._pt;
+            _eta    = ep_._eta;
+            _phi    = ep_._phi;
+            _energy = ep_._energy;
+            _et     = ep_._et;
+        }
         Ep(const reco::Candidate* gene) {
             _pt     = gene->pt();
             _eta    = gene->eta();
@@ -91,6 +97,9 @@ namespace sidm {
     class Zp : public objCompound{
     public:
         Zp(){}
+        Zp(const Zp& zp_): e(zp_.e), p(zp_.p),
+            _dv_x(zp_._dv_x), _dv_y(zp_._dv_y), _dv_z(zp_._dv_z) {
+            }
         Zp(const Ep& ine, const Ep& inp) : e(ine), p(inp) {
             _dEta = std::abs(e._eta - p._eta);
             _dPhi = std::abs(e._phi - p._phi);

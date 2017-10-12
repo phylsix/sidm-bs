@@ -88,15 +88,18 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
         }
 
         if (electronsFromSingleDarkPhoton[0]->charge() > 0 && electronsFromSingleDarkPhoton[1]->charge() < 0) {
-            sidm::Ep ele(electronsFromSingleDarkPhoton[1]), pos(electronsFromSingleDarkPhoton[0]);
-            darkPhotonFromGenEle_ = sidm::Zp(ele, pos);
+            //sidm::Ep ele(electronsFromSingleDarkPhoton[1]), pos(electronsFromSingleDarkPhoton[0]);
+            //darkPhotonFromGenEle_ = sidm::Zp(ele, pos);
+            darkPhotonFromGenEle_ = sidm::Zp(electronsFromSingleDarkPhoton[1], electronsFromSingleDarkPhoton[0]);
         } else if (electronsFromSingleDarkPhoton[0]->charge() < 0 && electronsFromSingleDarkPhoton[1]->charge() > 0) {
-            sidm::Ep ele(electronsFromSingleDarkPhoton[0]), pos(electronsFromSingleDarkPhoton[1]);
-            darkPhotonFromGenEle_ = sidm::Zp(ele, pos);
+            //sidm::Ep ele(electronsFromSingleDarkPhoton[0]), pos(electronsFromSingleDarkPhoton[1]);
+            //darkPhotonFromGenEle_ = sidm::Zp(ele, pos);
+            darkPhotonFromGenEle_ = sidm::Zp(electronsFromSingleDarkPhoton[0], electronsFromSingleDarkPhoton[1]);
         } else {
             cout<<"Event"<<eventNum_<<": Darkphoton is mother of two electrons, but not opposite charge, skip-\n";
             continue;
         }
+
         darkPhotonFromGenEle_.setVertex(zp.daughter(0)->vertex()); // complete with vertex info which lack from packedGenParticle
 
         darkPhotonFromGenEle_._eventId = eventNum_;
@@ -104,8 +107,8 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
         darkPhotonFromGenEle_._eta     = zp.eta();
         darkPhotonFromGenEle_._mass    = zp.mass();
 
-        darkPhotonFromElectronsInPackedGen.push_back(darkPhotonFromGenEle_);
         darkPhotonFromGenElectronsTree_->Fill();
+        darkPhotonFromElectronsInPackedGen.push_back(darkPhotonFromGenEle_);
     }
     // cout<<"Electron in darkPhotonFromElectronsInPackedGen[0]: eta:"<<darkPhotonFromElectronsInPackedGen[0].e._eta<<" phi:"<<darkPhotonFromElectronsInPackedGen[0].e._phi<<endl;
     // cout<<"Electron in darkPhotonFromElectronsInPackedGen[1]: eta:"<<darkPhotonFromElectronsInPackedGen[1].e._eta<<" phi:"<<darkPhotonFromElectronsInPackedGen[1].e._phi<<endl;
@@ -322,9 +325,9 @@ sidm::electronFinder::beginJob()
     darkPhotonFromGenElectronsTree_->Branch("dR_ep",   &darkPhotonFromGenEle_._dR, "dR_ep/F");
     darkPhotonFromGenElectronsTree_->Branch("dEta_ep", &darkPhotonFromGenEle_._dEta, "dEta_ep/F");
     darkPhotonFromGenElectronsTree_->Branch("dPhi_ep", &darkPhotonFromGenEle_._dPhi, "dPhi_ep/F");
-    darkPhotonFromGenElectronsTree_->Branch("dv_x",    &darkPhotonFromGenEle_._dv_x, "dv_x/F");
-    darkPhotonFromGenElectronsTree_->Branch("dv_y",    &darkPhotonFromGenEle_._dv_y, "dv_y/F");
-    darkPhotonFromGenElectronsTree_->Branch("dv_z",    &darkPhotonFromGenEle_._dv_z, "dv_z/F");
+    darkPhotonFromGenElectronsTree_->Branch("dv_x",    &darkPhotonFromGenEle_._dv_x, "dv_x/D");
+    darkPhotonFromGenElectronsTree_->Branch("dv_y",    &darkPhotonFromGenEle_._dv_y, "dv_y/D");
+    darkPhotonFromGenElectronsTree_->Branch("dv_z",    &darkPhotonFromGenEle_._dv_z, "dv_z/D");
 
     electronsFromPackedPFTree_ = fs_->make<TTree>("electronsFromPackedPF", "electron info from packedPF collection");
     electronsFromPackedPFTree_->Branch("eventId", &eventNum_, "eventId/I");
