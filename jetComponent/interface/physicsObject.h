@@ -145,6 +145,8 @@ namespace sidm {
             _dv_y = pt.Y();
             _dv_z = pt.Z();
         }
+        float eta() const { return (e._eta+p._eta)/2; }
+        float phi() const { return (e._phi+p._phi)/2; }
         
         Ep e, p;
         bool matched=false;

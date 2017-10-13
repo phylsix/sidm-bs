@@ -64,6 +64,7 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
     vector<Ptr<pat::PackedGenParticle> > pkdGenPtr_ = pkdGenHdl_->ptrs();
     vector<Ptr<pat::PackedCandidate> >   pfPtr_     = pfHdl_->ptrs();
+    vector<Ptr<pat::Jet> >               patJetPtr_ = patJetHdl_->ptrs();
     
     vector<sidm::Zp> darkPhotonFromElectronsInPackedGen{};
     for (const auto& zp : *genParticleHdl_) {
@@ -76,8 +77,6 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
             const reco::Candidate* motherInPrunedCollection(p->mother(0));
             if (motherInPrunedCollection != nullptr && sidm::is_ancestor(&zp, motherInPrunedCollection)) {
                 ++pkdGenElectron_N;
-                //auto p_ = p->clone();
-                //p_->setVertex(zp.daughter(0)->vertex());
                 electronsFromSingleDarkPhoton.push_back(p);
             }
         }
@@ -123,7 +122,9 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
             [](const auto& p){ return abs(p.pdgId()) == 11 && p.charge()>0; });
     pfGamma_N = count_if(cbegin(*pfHdl_), cend(*pfHdl_),
             [](const auto& p){ return p.pdgId() == 22; });
-    eventTree_->Fill();
+    patJet_N = patJetHdl_->size();
+    darkPhotonWithAtLeastOneDaughtermatched_N = 0;
+    matchedDarkPhoton_N = 0;
 
     if (darkPhotonFromElectronsInPackedGen.size() == 2) {
 
@@ -163,6 +164,10 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
                 mindRRecoWithGen = sidm::dR(q.first, q.second);
                 ///DEBUG cout<<mindRRecoWithGen<<" ";
                 electronsFromPackedPFTree_->Fill();
+
+                for (auto& zp : darkPhotonFromElectronsInPackedGen) {
+                    if (zp.e.indexInCollection() == q.second.key()) zp.e.matched = true;   
+                }
             }
         }
 
@@ -186,10 +191,46 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
                 mindRRecoWithGen = sidm::dR(q.first, q.second);
                 ///DEBUG cout<<mindRRecoWithGen<<" ";
                 electronsFromPackedPFTree_->Fill();
+                
+                for (auto& zp : darkPhotonFromElectronsInPackedGen) {
+                    if (zp.p.indexInCollection() == q.second.key()) zp.p.matched = true;   
+                }
+
             }
         }
         ///DEBUG cout<<endl;
 
+        matchedDarkPhoton_N = count_if(cbegin(darkPhotonFromElectronsInPackedGen), cend(darkPhotonFromElectronsInPackedGen),
+                [](const auto& zp){return zp.e.matched && zp.p.matched;});
+        darkPhotonWithAtLeastOneDaughtermatched_N = count_if(cbegin(darkPhotonFromElectronsInPackedGen), cend(darkPhotonFromElectronsInPackedGen),
+                [](const auto& zp){return zp.e.matched || zp.p.matched;});
+        matchedDarkPhotonWithJetIncluded_N = matchedDarkPhoton_N;
+
+        for (const auto& zp : darkPhotonFromElectronsInPackedGen) {
+            if (zp.e.matched && zp.p.matched) continue;
+
+            /// Fill in electrons who missed reco.
+            if (zp.e.matched == false) {
+                genElectronNoReco_ = sidm::Ep(zp.e);
+                genElectronNoRecoTree_->Fill();
+            }
+            if (zp.p.matched == false) {
+                genElectronNoReco_ = sidm::Ep(zp.p);
+                genElectronNoRecoTree_->Fill();
+            }
+
+            /// Count number of dark photons who has jet in the cone also.
+            for (const auto& j : patJetPtr_) {
+                if (sidm::dR(&zp, j)<=0.3) {
+                    ++matchedDarkPhotonWithJetIncluded_N;
+                    break;
+                }
+            }
+            //matchedDarkPhotonWithJetIncluded_N +=
+            //    count_if(cbegin(patJetPtr_), cend(patJetPtr_), [zp](const auto& j){ return sidm::dR(&zp, j)<=0.4; });
+        }
+        //cout<<"Event"<<eventNum_<<": matched darkphoton "<<matchedDarkPhoton_N<<" "<<darkPhotonWithAtLeastOneDaughtermatched_N
+        //    <<" "<<matchedDarkPhotonWithJetIncluded_N<<endl;
 
 
         /*
@@ -290,6 +331,8 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
         cout<<"Event"<<eventNum_<<": NOT 2 darkphotons are reconstructed from GEN, instead-  "
             <<darkPhotonFromElectronsInPackedGen.size()<<".\n";
     }
+
+    eventTree_->Fill();
     ++eventNum_;
 }
 
@@ -307,6 +350,10 @@ sidm::electronFinder::beginJob()
     eventTree_->Branch("numOfEpInPfCands",  &pfEp_N, "numOfEpInPfCands/I");
     eventTree_->Branch("numOfEleInPfCands", &pfElectron_N, "numOfEleInPfCands/I");
     eventTree_->Branch("numOfPosInPfCands", &pfPositron_N, "numOfPosInPfCands/I");
+    eventTree_->Branch("numOfMatchedDarkPhotons", &matchedDarkPhoton_N, "numOfMatchedDarkPhotons/I");
+    eventTree_->Branch("numOfDarkPhotonsWithAtLeastOneDaughterMatched", &darkPhotonWithAtLeastOneDaughtermatched_N, "numOfDarkPhotonsWithAtLeastOneDaughterMatched/I");
+    eventTree_->Branch("numOfJets", &patJet_N, "numOfJets/I");
+    eventTree_->Branch("numOfMatchedDarkPhotonWithJetIncluded", &matchedDarkPhotonWithJetIncluded_N, "numOfMatchedDarkPhotonWithJetIncluded/I");
     //eventTree_->Branch("numOfPhoInPfCands", &pfGamma_N, "numOfPhoInPfCands/I");
 
     darkPhotonFromGenElectronsTree_ = fs_->make<TTree>("darkPhotonFromGenElectrons",
@@ -342,6 +389,13 @@ sidm::electronFinder::beginJob()
     electronsFromPATTree_->Branch("eta", &electronFromPat_._eta, "eta/F");
     electronsFromPATTree_->Branch("et", &electronFromPat_._et, "et/F");
     electronsFromPATTree_->Branch("dR", &mindRPatWithGen, "dR/F");
+
+    genElectronNoRecoTree_ = fs_->make<TTree>("genElectronNoReco", "electron info from packedGenParticle collection\
+            who missed the reconstruction");
+    genElectronNoRecoTree_->Branch("eventId", &eventNum_, "eventId/I");
+    genElectronNoRecoTree_->Branch("pt",  &genElectronNoReco_._pt, "pt/F");
+    genElectronNoRecoTree_->Branch("eta", &genElectronNoReco_._eta, "eta/F");
+    genElectronNoRecoTree_->Branch("et",  &genElectronNoReco_._et, "et/F");
 
 }
 
