@@ -61,6 +61,7 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     pfElectron_N     = 0;
     pfGamma_N        = 0;
     pkdGenEleCutApplied_N = 0;
+    epOfZpInJet_N = 0;
 
     vector<Ptr<pat::PackedGenParticle> > pkdGenPtr_ = pkdGenHdl_->ptrs();
     vector<Ptr<pat::PackedCandidate> >   pfPtr_     = pfHdl_->ptrs();
@@ -166,8 +167,12 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
                 electronsFromPackedPFTree_->Fill();
 
                 for (auto& zp : darkPhotonFromElectronsInPackedGen) {
-                    if (zp.e.indexInCollection() == q.second.key()) zp.e.matched = true;   
+                    if (zp.e.indexInCollection() == q.second.key()) {
+                        zp.e.matched = true;
+                        zp.e.setIndexInCollectionMatched(q.first.key());
+                    }
                 }
+
             }
         }
 
@@ -193,7 +198,10 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
                 electronsFromPackedPFTree_->Fill();
                 
                 for (auto& zp : darkPhotonFromElectronsInPackedGen) {
-                    if (zp.p.indexInCollection() == q.second.key()) zp.p.matched = true;   
+                    if (zp.p.indexInCollection() == q.second.key()) {
+                        zp.p.matched = true;
+                        zp.p.setIndexInCollectionMatched(q.first.key());
+                    }
                 }
 
             }
@@ -205,6 +213,7 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
         darkPhotonWithAtLeastOneDaughtermatched_N = count_if(cbegin(darkPhotonFromElectronsInPackedGen), cend(darkPhotonFromElectronsInPackedGen),
                 [](const auto& zp){return zp.e.matched || zp.p.matched;});
         matchedDarkPhotonWithJetIncluded_N = matchedDarkPhoton_N;
+
 
         for (const auto& zp : darkPhotonFromElectronsInPackedGen) {
             if (zp.e.matched && zp.p.matched) continue;
@@ -220,12 +229,45 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
             }
 
             /// Count number of dark photons who has jet in the cone also.
+            float min_dR_zp_jet = 9999.;
+            int matched_jet_id = -1;
             for (const auto& j : patJetPtr_) {
-                if (sidm::dR(&zp, j)<=0.3) {
-                    ++matchedDarkPhotonWithJetIncluded_N;
-                    break;
+                if ( sidm::dR(&zp, j) < min_dR_zp_jet ) {
+                    min_dR_zp_jet = sidm::dR(&zp, j);
+                    matched_jet_id = j.key();
                 }
             }
+            if ( min_dR_zp_jet > 3. ) continue;
+
+            Ptr<pat::Jet> matchedJetPtr(patJetHdl_, matched_jet_id);
+            ++matchedDarkPhotonWithJetIncluded_N;
+            suspiciousPatJet_ = sidm::Jet(matchedJetPtr);
+            suspiciousPatJetTree_->Fill();
+            if (!zp.e.matched && !zp.p.matched) {
+                suspiciousPatJetSingle_ = sidm::Jet(matchedJetPtr);
+                suspiciousPatJetSingleTree_->Fill();
+            } else {
+                suspiciousPatJetCoex_ = sidm::Jet(matchedJetPtr);
+                if (zp.e.matched) {
+                    for (auto& id : suspiciousPatJetCoex_._daughter_id) {
+                        if (id == zp.e.indexInCollectionMatched()) {
+                            ++epOfZpInJet_N;
+                            break;
+                        }
+                    }
+                } else {
+                    for (auto& id : suspiciousPatJetCoex_._daughter_id) {
+                        if (id == zp.p.indexInCollectionMatched()) {
+                            ++epOfZpInJet_N;
+                            break;
+                        }
+                    }
+                }
+
+                suspiciousPatJetCoexTree_->Fill();
+
+            }
+
             //matchedDarkPhotonWithJetIncluded_N +=
             //    count_if(cbegin(patJetPtr_), cend(patJetPtr_), [zp](const auto& j){ return sidm::dR(&zp, j)<=0.4; });
         }
@@ -396,6 +438,43 @@ sidm::electronFinder::beginJob()
     genElectronNoRecoTree_->Branch("pt",  &genElectronNoReco_._pt, "pt/F");
     genElectronNoRecoTree_->Branch("eta", &genElectronNoReco_._eta, "eta/F");
     genElectronNoRecoTree_->Branch("et",  &genElectronNoReco_._et, "et/F");
+    
+    suspiciousPatJetTree_ = fs_->make<TTree>("suspiciousPatJet", "jet info who is inside dark photon cone");
+    suspiciousPatJetTree_->Branch("eventId", &eventNum_, "eventId/I");
+    suspiciousPatJetTree_->Branch("pt",  &suspiciousPatJet_._pt, "pt/F");
+    suspiciousPatJetTree_->Branch("eta", &suspiciousPatJet_._eta, "eta/F");
+    suspiciousPatJetTree_->Branch("et",  &suspiciousPatJet_._et, "et/F");
+    suspiciousPatJetTree_->Branch("chargedHOverE",  &suspiciousPatJet_._charged_H_over_E, "chargedHOverE/F");
+    suspiciousPatJetTree_->Branch("chargedMultiplicity",  &suspiciousPatJet_._chargedMultiplicity, "chargedMultiplicity/I");
+    suspiciousPatJetTree_->Branch("electronEnergyFraction",  &suspiciousPatJet_._electronEnergyFraction, "electronEnergyFraction/F");
+    suspiciousPatJetTree_->Branch("electronMultiplicity",  &suspiciousPatJet_._electronMultiplicity, "electronMultiplicity/I");
+    suspiciousPatJetTree_->Branch("numberOfDaughters",  &suspiciousPatJet_._num_of_daughters, "numberOfDaughers/I");
+    suspiciousPatJetTree_->Branch("daughterIds",  "vector<unsigned int>", &suspiciousPatJet_._daughter_id);
+
+    suspiciousPatJetSingleTree_ = fs_->make<TTree>("suspiciousPatJetSingle", "jet info who is inside dark photon cone with no electron or positron along");
+    suspiciousPatJetSingleTree_->Branch("eventId", &eventNum_, "eventId/I");
+    suspiciousPatJetSingleTree_->Branch("pt",  &suspiciousPatJetSingle_._pt, "pt/F");
+    suspiciousPatJetSingleTree_->Branch("eta", &suspiciousPatJetSingle_._eta, "eta/F");
+    suspiciousPatJetSingleTree_->Branch("et",  &suspiciousPatJetSingle_._et, "et/F");
+    suspiciousPatJetSingleTree_->Branch("chargedHOverE",  &suspiciousPatJetSingle_._charged_H_over_E, "chargedHOverE/F");
+    suspiciousPatJetSingleTree_->Branch("chargedMultiplicity",  &suspiciousPatJetSingle_._chargedMultiplicity, "chargedMultiplicity/I");
+    suspiciousPatJetSingleTree_->Branch("electronEnergyFraction",  &suspiciousPatJetSingle_._electronEnergyFraction, "electronEnergyFraction/F");
+    suspiciousPatJetSingleTree_->Branch("electronMultiplicity",  &suspiciousPatJetSingle_._electronMultiplicity, "electronMultiplicity/I");
+    suspiciousPatJetSingleTree_->Branch("numberOfDaughters",  &suspiciousPatJetSingle_._num_of_daughters, "numberOfDaughers/I");
+    suspiciousPatJetSingleTree_->Branch("daughterIds",  "vector<unsigned int>", &suspiciousPatJetSingle_._daughter_id);
+
+    suspiciousPatJetCoexTree_ = fs_->make<TTree>("suspiciousPatJetCoex", "jet info who is inside dark photon cone with electron or positron along");
+    suspiciousPatJetCoexTree_->Branch("eventId", &eventNum_, "eventId/I");
+    suspiciousPatJetCoexTree_->Branch("pt",  &suspiciousPatJetCoex_._pt, "pt/F");
+    suspiciousPatJetCoexTree_->Branch("eta", &suspiciousPatJetCoex_._eta, "eta/F");
+    suspiciousPatJetCoexTree_->Branch("et",  &suspiciousPatJetCoex_._et, "et/F");
+    suspiciousPatJetCoexTree_->Branch("chargedHOverE",  &suspiciousPatJetCoex_._charged_H_over_E, "chargedHOverE/F");
+    suspiciousPatJetCoexTree_->Branch("chargedMultiplicity",  &suspiciousPatJetCoex_._chargedMultiplicity, "chargedMultiplicity/I");
+    suspiciousPatJetCoexTree_->Branch("electronEnergyFraction",  &suspiciousPatJetCoex_._electronEnergyFraction, "electronEnergyFraction/F");
+    suspiciousPatJetCoexTree_->Branch("electronMultiplicity",  &suspiciousPatJetCoex_._electronMultiplicity, "electronMultiplicity/I");
+    suspiciousPatJetCoexTree_->Branch("numberOfDaughters",  &suspiciousPatJetCoex_._num_of_daughters, "numberOfDaughers/I");
+    suspiciousPatJetCoexTree_->Branch("daughterIds",  "vector<unsigned int>", &suspiciousPatJetCoex_._daughter_id);
+    suspiciousPatJetCoexTree_->Branch("JetDaughterIsMatchedEp", &epOfZpInJet_N, "JetDaughterIsMatchedEp/I");
 
 }
 

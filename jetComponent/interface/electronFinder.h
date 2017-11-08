@@ -63,6 +63,7 @@ namespace sidm {
             Int_t darkPhotonWithAtLeastOneDaughtermatched_N;
             Int_t patJet_N;
             Int_t matchedDarkPhotonWithJetIncluded_N;
+            Int_t epOfZpInJet_N;
 
             TTree* darkPhotonFromGenElectronsTree_;
             sidm::Zp darkPhotonFromGenEle_;
@@ -75,6 +76,15 @@ namespace sidm {
 
             TTree* genElectronNoRecoTree_;
             sidm::Ep genElectronNoReco_;
+
+            TTree* suspiciousPatJetTree_;
+            sidm::Jet suspiciousPatJet_;
+            
+            TTree* suspiciousPatJetSingleTree_;
+            sidm::Jet suspiciousPatJetSingle_;
+
+            TTree* suspiciousPatJetCoexTree_;
+            sidm::Jet suspiciousPatJetCoex_;
 
             float mindRRecoWithGen;
             float mindRPatWithGen;

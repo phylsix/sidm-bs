@@ -24,6 +24,8 @@ namespace sidm {
         float _mass;
         float eta() const {return _eta;}
         float phi() const {return _phi;}
+        float et() const {return _et;}
+        float pt() const {return _pt;}
     };
 
     class objCompound : public objBase{
@@ -46,10 +48,16 @@ namespace sidm {
               _electronMultiplicity( patj->isPFJet() ? patj->electronMultiplicity():-999),
               _num_elec_fullin( patj->isJPTJet() ?  patj->elecsInVertexInCalo().size():-999 ),
               _num_elec_curledin( patj->isJPTJet() ? patj->elecsOutVertexInCalo().size():-999 ),
-              _num_elec_curledout( patj->isJPTJet() ? patj->elecsInVertexOutCalo().size():-999 )
+              _num_elec_curledout( patj->isJPTJet() ? patj->elecsInVertexOutCalo().size():-999 ),
+              _num_of_daughters( patj->numberOfDaughters())
         {
             _pt = patj->pt();
+            _et = patj->et();
             _eta = patj->eta();
+            _phi = patj->phi();
+            for (unsigned int i=0; i!=patj->numberOfDaughters(); ++i) {
+                _daughter_id.push_back(patj->daughter(i)->pdgId());       
+            }
         }
 
         float _charged_H_over_E;  //< relative to uncorrected jet energy.
@@ -60,6 +68,9 @@ namespace sidm {
         int _num_elec_fullin;
         int _num_elec_curledin;
         int _num_elec_curledout;
+
+        int _num_of_daughters;
+        std::vector<unsigned int> _daughter_id;
     };
 
     class Ep : public objBase{
@@ -88,10 +99,13 @@ namespace sidm {
             _et     = edmCopy->et();
         }
         unsigned long indexInCollection() const { return _indexInCollection; }
+        unsigned long indexInCollectionMatched() const { return _indexInCollectionMatched; }
+        void setIndexInCollectionMatched(unsigned long key) {_indexInCollectionMatched = key;}
 
         bool matched = false;
     private:
         unsigned long _indexInCollection; // Index in EDCollection, used to construct edm::Ptr
+        unsigned long _indexInCollectionMatched;
     };
 
     class Zp : public objCompound{
