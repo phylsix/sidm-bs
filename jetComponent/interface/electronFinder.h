@@ -88,6 +88,8 @@ namespace sidm {
 
             float mindRRecoWithGen;
             float mindRPatWithGen;
+            float mindRZpWithJet;
+            float dRJetWithMatchedEp;
     };
 
 }  // namespace sidm

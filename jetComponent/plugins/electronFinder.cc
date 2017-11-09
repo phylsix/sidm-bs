@@ -229,26 +229,29 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
             }
 
             /// Count number of dark photons who has jet in the cone also.
-            float min_dR_zp_jet = 9999.;
+            mindRZpWithJet = 9999.;
             int matched_jet_id = -1;
             for (const auto& j : patJetPtr_) {
-                if ( sidm::dR(&zp, j) < min_dR_zp_jet ) {
-                    min_dR_zp_jet = sidm::dR(&zp, j);
+                if ( sidm::dR(&zp, j) < mindRZpWithJet ) {
+                    mindRZpWithJet = sidm::dR(&zp, j);
                     matched_jet_id = j.key();
                 }
             }
-            if ( min_dR_zp_jet > 3. ) continue;
+            if ( mindRZpWithJet > 3. ) continue;
 
             Ptr<pat::Jet> matchedJetPtr(patJetHdl_, matched_jet_id);
             ++matchedDarkPhotonWithJetIncluded_N;
             suspiciousPatJet_ = sidm::Jet(matchedJetPtr);
             suspiciousPatJetTree_->Fill();
+            cout<<"Event"<<eventNum_<<" min dR(zp, jet) = "<<mindRZpWithJet<<endl;
             if (!zp.e.matched && !zp.p.matched) {
                 suspiciousPatJetSingle_ = sidm::Jet(matchedJetPtr);
                 suspiciousPatJetSingleTree_->Fill();
             } else {
                 suspiciousPatJetCoex_ = sidm::Jet(matchedJetPtr);
+                //float dRJetWithMatchedEp = 9999.;
                 if (zp.e.matched) {
+                    dRJetWithMatchedEp = sidm::dR(matchedJetPtr, &zp.e);
                     for (auto& id : suspiciousPatJetCoex_._daughter_id) {
                         if (id == zp.e.indexInCollectionMatched()) {
                             ++epOfZpInJet_N;
@@ -256,6 +259,7 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
                         }
                     }
                 } else {
+                    dRJetWithMatchedEp = sidm::dR(matchedJetPtr, &zp.p);
                     for (auto& id : suspiciousPatJetCoex_._daughter_id) {
                         if (id == zp.p.indexInCollectionMatched()) {
                             ++epOfZpInJet_N;
@@ -274,80 +278,6 @@ sidm::electronFinder::analyze(const edm::Event& iEvent, const edm::EventSetup& i
         //cout<<"Event"<<eventNum_<<": matched darkphoton "<<matchedDarkPhoton_N<<" "<<darkPhotonWithAtLeastOneDaughtermatched_N
         //    <<" "<<matchedDarkPhotonWithJetIncluded_N<<endl;
 
-
-        /*
-        for (const auto& pf : pfPtr_) {
-            if (abs(pf->pdgId()) != 11) continue;
-            electronFromPkdPF_ = sidm::Ep(pf);
-
-            vector<float> deltaRtmp{999., 999.};
-            if (pf.charge()<0) { // electron
-                deltaRtmp[0] = sidm::dR(pf, darkPhotonFromElectronsInPackedGen[0].e);
-                deltaRtmp[1] = sidm::dR(pf, darkPhotonFromElectronsInPackedGen[1].e);
-                if (darkPhotonFromElectronsInPackedGen[0].e.matched == false &&
-                    darkPhotonFromElectronsInPackedGen[1].e.matched == false) { // no matched yet
-                    if (deltaRtmp[0] <= deltaRtmp[1]) {
-                        mindRRecoWithGen = deltaRtmp[0];
-                        darkPhotonFromElectronsInPackedGen[0].e.matched = true;
-                        // cout<<"Event"<<eventNum_<<": Electron from dark photon matched status "
-                        //     <<darkPhotonFromElectronsInPackedGen[0].e.matched<<" "
-                        //     <<darkPhotonFromElectronsInPackedGen[1].e.matched<<endl;
-                    } else {
-                        mindRRecoWithGen = deltaRtmp[1];
-                        darkPhotonFromElectronsInPackedGen[1].e.matched = true;
-                        // cout<<"Event"<<eventNum_<<": Electron from dark photon matched status "
-                        //     <<darkPhotonFromElectronsInPackedGen[0].e.matched<<" "
-                        //     <<darkPhotonFromElectronsInPackedGen[1].e.matched<<endl;
-                    }
-                } else if (darkPhotonFromElectronsInPackedGen[0].e.matched == false &&
-                           darkPhotonFromElectronsInPackedGen[1].e.matched == true) {
-                    mindRRecoWithGen = deltaRtmp[0];
-                    darkPhotonFromElectronsInPackedGen[0].e.matched = true;
-                    // cout<<"Event"<<eventNum_<<": Electron from dark photon matched status "
-                    //     <<darkPhotonFromElectronsInPackedGen[0].e.matched<<" "
-                    //     <<darkPhotonFromElectronsInPackedGen[1].e.matched<<endl;
-                } else if (darkPhotonFromElectronsInPackedGen[0].e.matched == true &&
-                           darkPhotonFromElectronsInPackedGen[1].e.matched == false) {
-                    mindRRecoWithGen = deltaRtmp[1];
-                    darkPhotonFromElectronsInPackedGen[1].e.matched = true;
-                    // cout<<"Event"<<eventNum_<<": Electron from dark photon matched status "
-                    //     <<darkPhotonFromElectronsInPackedGen[0].e.matched<<" "
-                    //     <<darkPhotonFromElectronsInPackedGen[1].e.matched<<endl;
-                } else {
-                    // cout<<"Event"<<eventNum_<<": Electron from dark photon matched status "
-                    //     <<darkPhotonFromElectronsInPackedGen[0].e.matched<<" "
-                    //     <<darkPhotonFromElectronsInPackedGen[1].e.matched<<endl;
-                    cout<<"Event"<<eventNum_<<": Has more than 2 electrons in PFCandidates, skip this event-\n";
-                    continue; 
-                }
-            } else if (pf.charge()>0) { // positron
-                deltaRtmp[0] = sidm::dR(pf, darkPhotonFromElectronsInPackedGen[0].p);
-                deltaRtmp[1] = sidm::dR(pf, darkPhotonFromElectronsInPackedGen[1].p);
-                if (darkPhotonFromElectronsInPackedGen[0].p.matched == false &&
-                    darkPhotonFromElectronsInPackedGen[1].p.matched == false) { // no matched yet
-                    if (deltaRtmp[0] <= deltaRtmp[1]) {
-                        mindRRecoWithGen = deltaRtmp[0];
-                        darkPhotonFromElectronsInPackedGen[0].p.matched = true;
-                    } else {
-                        mindRRecoWithGen = deltaRtmp[1];
-                        darkPhotonFromElectronsInPackedGen[1].p.matched = true;
-                    }
-                } else if (darkPhotonFromElectronsInPackedGen[0].p.matched == false &&
-                           darkPhotonFromElectronsInPackedGen[1].p.matched == true) {
-                    mindRRecoWithGen = deltaRtmp[0];
-                    darkPhotonFromElectronsInPackedGen[0].p.matched = true;
-                } else if (darkPhotonFromElectronsInPackedGen[0].p.matched == true &&
-                           darkPhotonFromElectronsInPackedGen[1].p.matched == false) {
-                    mindRRecoWithGen = deltaRtmp[1];
-                    darkPhotonFromElectronsInPackedGen[1].p.matched = true;
-                } else {
-                    cout<<"Event"<<eventNum_<<": Has more than 2 positrons in PFCandidates, skip this event-\n";
-                    continue; 
-                }
-            }
-
-            electronsFromPackedPFTree_->Fill();
-        }*/
 
         vector<Ptr<pat::Electron> > patElectronPtr_ = patElectronHdl_->ptrs();
         for (const auto& p : patElectronPtr_) {
@@ -450,6 +380,7 @@ sidm::electronFinder::beginJob()
     suspiciousPatJetTree_->Branch("electronMultiplicity",  &suspiciousPatJet_._electronMultiplicity, "electronMultiplicity/I");
     suspiciousPatJetTree_->Branch("numberOfDaughters",  &suspiciousPatJet_._num_of_daughters, "numberOfDaughers/I");
     suspiciousPatJetTree_->Branch("daughterIds",  "vector<unsigned int>", &suspiciousPatJet_._daughter_id);
+    suspiciousPatJetTree_->Branch("dRZpWithJet",  &mindRZpWithJet, "dRZpWithJet/F");
 
     suspiciousPatJetSingleTree_ = fs_->make<TTree>("suspiciousPatJetSingle", "jet info who is inside dark photon cone with no electron or positron along");
     suspiciousPatJetSingleTree_->Branch("eventId", &eventNum_, "eventId/I");
@@ -475,6 +406,7 @@ sidm::electronFinder::beginJob()
     suspiciousPatJetCoexTree_->Branch("numberOfDaughters",  &suspiciousPatJetCoex_._num_of_daughters, "numberOfDaughers/I");
     suspiciousPatJetCoexTree_->Branch("daughterIds",  "vector<unsigned int>", &suspiciousPatJetCoex_._daughter_id);
     suspiciousPatJetCoexTree_->Branch("JetDaughterIsMatchedEp", &epOfZpInJet_N, "JetDaughterIsMatchedEp/I");
+    suspiciousPatJetCoexTree_->Branch("dRJetMatchdEp", &dRJetWithMatchedEp, "dRJetMatchdEp/F");
 
 }
 
