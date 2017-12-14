@@ -32,6 +32,7 @@ namespace sidm {
 
 
         pairvec(const pv& vp, bool unique=false) {
+            _a.clear(); _b.clear();
             for (const auto& p : vp) {
                 if (!unique){
                     _a.push_back(p.first);
@@ -47,7 +48,7 @@ namespace sidm {
         }
         
 
-        virtual ~pairvec() {};
+        virtual ~pairvec() {_a.clear(); _b.clear();};
 
 
         // return a vector whose size = _a.size()*_b.size()

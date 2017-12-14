@@ -71,7 +71,15 @@ namespace sidm {
             TH1F* genMuonEta_;
             TH1F* genMuonPhi_;
             TH2F* genMuonVertex_;
-
+            
+            TH1F* matchedMuonMultiplicity_;
+            TH1F* matchedMuonEnergy_;
+            TH1F* matchedMuonPt_;
+            TH1F* matchedMuonEt_;
+            TH1F* matchedMuonEta_;
+            TH1F* matchedMuonPhi_;
+            TH2F* matchedMuonVertex_;
+            TH1F* matchedMuonDR_;
 
             Int_t eventNum_;
     };
