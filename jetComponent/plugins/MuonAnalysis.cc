@@ -241,6 +241,60 @@ sidm::MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
     matchedMuonMultiplicity_->Fill(totalMatchedMuons);
 
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Gen PAT Matching <<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
+    
+
+
+    //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Unmatched Gen Muons >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    
+    for (const auto& gd : genDarkphotonsMatchFlags) {
+        /*Unmatched mu plus*/
+        if (!gd.second.first) {
+            Ptr<pat::PackedGenParticle> unMuPlus(pkdGenHdl_,genDarkphotons[gd.first].first);
+            /*Fill unmatched gen muon properties*/
+            unmatchedMuonEnergy_->Fill(unMuPlus->energy());
+            unmatchedMuonPt_    ->Fill(unMuPlus->pt());
+            unmatchedMuonEt_    ->Fill(unMuPlus->et());
+            unmatchedMuonEta_   ->Fill(unMuPlus->eta());
+            unmatchedMuonPhi_   ->Fill(unMuPlus->phi());
+            unmatchedMuonVertex_->Fill(sqrt(unMuPlus->vx()*unMuPlus->vx() + unMuPlus->vy()*unMuPlus->vy()),
+                                        abs(unMuPlus->vz()));
+        }
+
+        /*Unmatched mu minus*/
+        if (!gd.second.second) {
+            Ptr<pat::PackedGenParticle> unMuMinus(pkdGenHdl_, genDarkphotons[gd.first].second);
+            /*Fill unmatched gen muon properties*/
+            unmatchedMuonEnergy_->Fill(unMuMinus->energy());
+            unmatchedMuonPt_    ->Fill(unMuMinus->pt());
+            unmatchedMuonEt_    ->Fill(unMuMinus->et());
+            unmatchedMuonEta_   ->Fill(unMuMinus->eta());
+            unmatchedMuonPhi_   ->Fill(unMuMinus->phi());
+            unmatchedMuonVertex_->Fill(sqrt(unMuMinus->vx()*unMuMinus->vx() + unMuMinus->vy()*unMuMinus->vy()),
+                                        abs(unMuMinus->vz()));
+        }
+    }
+    unmatchedMuonMultiplicity_->Fill(4-totalMatchedMuons);
+    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Unmatched Gen Muons <<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
+    //
+    //
+    //
+    //>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Matched PAT Muon Pair >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+    int totalMatchedDarkphotons(0);
+    for (const auto& gd : genDarkphotonsMatchFlags) {
+        if (gd.second.first && gd.second.second) {
+            ++totalMatchedDarkphotons;
+            /*Fill invM + dR*/
+            Ptr<pat::PackedGenParticle> muPlus(pkdGenHdl_, genDarkphotons[gd.first].first);
+            Ptr<pat::PackedGenParticle> muMinus(pkdGenHdl_, genDarkphotons[gd.first].second);
+
+            matchedDarkphotonInvm_MuMu_->Fill((muPlus->p4()+muMinus->p4()).M());
+            matchedDarkphotonDR_MuMu_  ->Fill(sidm::dR(muPlus, muMinus));
+        }
+    }
+    assert(totalMatchedDarkphotons<=2);
+    matchedDarkphotonMultiplicity_MuMu_->Fill(totalMatchedDarkphotons);
+    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Matched PAT Muon Pair <<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
     ++eventNum_;
 }
 
@@ -278,8 +332,21 @@ sidm::MuonAnalysis::beginJob()
     matchedMuonEta_          = matchedMuonDir.make<TH1F>("matchedMuonEta", "Muon Eta",60,-3,3);
     matchedMuonPhi_          = matchedMuonDir.make<TH1F>("matchedMuonPhi", "Muon Phi",50,-3.1416,3.1416);
     matchedMuonVertex_       = matchedMuonDir.make<TH2F>("matchedMuonVertex", "Muon vertex position",50,0,1,100,0,50);
-    matchedMuonDR_           = matchedMuonDir.make<TH1F>("matchedMuonDR", "dR between pat muon and matched gen muon",100,0,5);
+    matchedMuonDR_           = matchedMuonDir.make<TH1F>("matchedMuonDR", "dR between pat muon and matched gen muon",100,0,0.5);
 
+    TFileDirectory unmatchedMuonDir = fs_->mkdir("Unmatched_GEN_Muon");
+    unmatchedMuonMultiplicity_ = unmatchedMuonDir.make<TH1F>("unmatchedMuonMultiplicity", "Muon Multiplicity", 10,0,10);
+    unmatchedMuonEnergy_       = unmatchedMuonDir.make<TH1F>("unmatchedMuonEnergy", "Muon Energy", 100,0,100);
+    unmatchedMuonPt_           = unmatchedMuonDir.make<TH1F>("unmatchedMuonPt", "Muon Pt", 100,0,100);
+    unmatchedMuonEt_           = unmatchedMuonDir.make<TH1F>("unmatchedMuonEt", "Muon Et", 100,0,100);
+    unmatchedMuonEta_          = unmatchedMuonDir.make<TH1F>("unmatchedMuonEta", "Muon Eta",60,-3,3);
+    unmatchedMuonPhi_          = unmatchedMuonDir.make<TH1F>("unmatchedMuonPhi", "Muon Phi",50,-3.1416,3.1416);
+    unmatchedMuonVertex_       = unmatchedMuonDir.make<TH2F>("unmatchedMuonVertex", "Muon vertex position",50,0,1,100,0,50);
+
+    TFileDirectory matchedDarkphotonDir = fs_->mkdir("matched_darkphoton");
+    matchedDarkphotonMultiplicity_MuMu_ = matchedDarkphotonDir.make<TH1F>("matchedDarkphotonMultiplicityMuMu", "Darkphoton(MuMu) Multiplicity",10,0,10);
+    matchedDarkphotonInvm_MuMu_         = matchedDarkphotonDir.make<TH1F>("matchedDarkphotonInvmMuMu", "Darkphoton(MuMu) Invariant Mass",100,0,5);
+    matchedDarkphotonDR_MuMu_           = matchedDarkphotonDir.make<TH1F>("matchedDarkphotonDRMuMu", "Darkphoton(MuMu) daughter's dR", 100,0,0.5);
     // eventTree_->Branch("numberOfElectrons", &electron_N, "numberOfElectrons/I");
 
 }
@@ -355,6 +422,29 @@ sidm::MuonAnalysis::endJob()
     
     matchedMuonDR_->GetXaxis()->SetTitle("\deltaR");
     matchedMuonDR_->GetYaxis()->SetTitle("Event Number");
+
+    //------------------------------------------
+
+    unmatchedMuonMultiplicity_->GetXaxis()->SetTitle("Number of Muons");
+    unmatchedMuonMultiplicity_->GetYaxis()->SetTitle("Event Number");
+
+    unmatchedMuonEnergy_->GetXaxis()->SetTitle("Energy [GeV]");
+    unmatchedMuonEnergy_->GetYaxis()->SetTitle("Event Number");
+
+    unmatchedMuonPt_->GetXaxis()->SetTitle("pT [GeV]");
+    unmatchedMuonPt_->GetYaxis()->SetTitle("Event Number");
+
+    unmatchedMuonEt_->GetXaxis()->SetTitle("ET [GeV]");
+    unmatchedMuonEt_->GetYaxis()->SetTitle("Event Number");
+
+    unmatchedMuonEta_->GetXaxis()->SetTitle("eta");
+    unmatchedMuonEta_->GetYaxis()->SetTitle("Event Number");
+
+    unmatchedMuonPhi_->GetXaxis()->SetTitle("phi");
+    unmatchedMuonPhi_->GetYaxis()->SetTitle("Event Number");
+
+    unmatchedMuonVertex_->GetXaxis()->SetTitle("V_{z}");
+    unmatchedMuonVertex_->GetYaxis()->SetTitle("V_{xy}");
 
     //------------------------------------------
 
