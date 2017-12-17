@@ -90,8 +90,23 @@ namespace sidm {
             TH2F* unmatchedMuonVertex_;
 
             TH1F* matchedDarkphotonMultiplicity_MuMu_;
+            TH1F* matchedDarkphotonMultiplicity_MuJet_;
             TH1F* matchedDarkphotonInvm_MuMu_;
             TH1F* matchedDarkphotonDR_MuMu_;
+
+            TH1F* jetInConeMultiplicity_;
+            TH1F* jetInConeEnergy_; 
+            TH1F* jetInConePt_;            
+            TH1F* jetInConeEt_;                
+            TH1F* jetInConeEta_;                
+            TH1F* jetInConePhi_;               
+            TH1F* jetInConeChargedHoverE_;
+            TH1F* jetInConeChargedMultiplicity_;
+            TH1F* jetInConeMuonEnergyFraction_;
+            TH1F* jetInConeMuonMultiplicity_;
+            TH1F* jetInConeDR_;
+            TH1F* jetInConeAloneMultiplicity_;
+
             Int_t eventNum_;
     };
 

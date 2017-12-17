@@ -5,7 +5,7 @@ process = cms.Process("MuonAnalysis")
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.threshold = 'ERROR'
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(2000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 process.options   = cms.untracked.PSet( SkipEvent = cms.untracked.vstring('ProductNotFound'))
 
 process.source = cms.Source("PoolSource",
@@ -33,6 +33,6 @@ process.MuonAnalysis = cms.EDAnalyzer("sidm::MuonAnalysis",
 )
 process.TFileService = cms.Service("TFileService",
                                    fileName
-                                   = cms.string("$CMSSW_BASE/src/sidm-bs/jetComponent/mydata/MuonAnalysis.root"))
+                                   = cms.string("$CMSSW_BASE/src/sidm-bs/jetComponent/mydata/MuonAnalysis_1GeV_1mm.root"))
 
 process.p = cms.Path(process.MuonAnalysis)
